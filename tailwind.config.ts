@@ -1,22 +1,23 @@
 import defaultTheme from "tailwindcss/defaultTheme";
+import type { Config } from "tailwindcss";
 
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-    darkMode: ["class"],
+const config: Config = {
+    darkMode: "class",
     content: [
-        './pages/**/*.{ts,tsx}',
-        './components/**/*.{ts,tsx}',
-        './app/**/*.{ts,tsx}',
-        './src/**/*.{ts,tsx}',
+        "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+        "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+        "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
     ],
     theme: {
         extend: {
             fontFamily: {
                 // This sets Poppins as the default font-sans
                 sans: ["var(--font-poppins)", ...defaultTheme.fontFamily.sans],
+                poppins: ['var(--font-poppins)', 'sans-serif'],
             },
             // ... rest of your theme config (colors, etc.)
         },
     },
-    // plugins: [require("tailwindcss-animate")],
-}
+    plugins: [],
+};
+export default config;

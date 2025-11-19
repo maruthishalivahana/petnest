@@ -1,28 +1,42 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google"; // 1. Import Poppins
+import { Poppins } from "next/font/google";
 import "./globals.css";
 
-// 2. Configure the font
 const poppins = Poppins({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"], // Select the weights you need
-  variable: "--font-poppins", // Define the CSS variable
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-poppins",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "PetNest",
-  description: "The safest pet marketplace in Tamil Nadu",
+  title: "PetNest - Your Trusted Tamil Nadu Pet Marketplace",
+  description:
+    "The safest pet marketplace in Tamil Nadu. Connect directly with verified breeders and sellers. No middlemen, no scams.",
+  keywords: [
+    "pets",
+    "Tamil Nadu",
+    "pet marketplace",
+    "verified breeders",
+    "dogs",
+    "cats",
+  ],
+  authors: [{ name: "PetNest" }],
+  openGraph: {
+    title: "PetNest - Your Trusted Tamil Nadu Pet Marketplace",
+    description: "The safest pet marketplace in Tamil Nadu",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en">
-      {/* 3. Add the variable to the body class */}
-      <body className={`${poppins.variable} font-sans antialiased`}>
+    <html lang="en" className={poppins.variable} suppressHydrationWarning>
+      <body className={`${poppins.className} antialiased`} suppressHydrationWarning>
         {children}
       </body>
     </html>
