@@ -90,13 +90,13 @@ export default function SignUp() {
 
             console.log('Response:', res.data)
 
-            // After successful submission, navigate to verify-otp
+
             router.push('/verify-otp')
 
         } catch (error) {
             console.error('Error submitting form:', error)
 
-            // Show error message to user
+
             if (axios.isAxiosError(error)) {
                 const errorMessage = error.response?.data?.message || 'Failed to send OTP. Please try again.'
                 alert(errorMessage) // Consider using a toast notification instead
