@@ -1,5 +1,5 @@
 "use client"
-import SignUp from '@/components/signup'
+import SignUp from '@/components/landing/signup'
 
 export default function SignupPage() {
     return <SignUp />

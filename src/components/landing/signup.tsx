@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { set, z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
     Form,
@@ -28,6 +28,14 @@ import { useRouter } from "next/navigation"
 import axios from "axios"
 import { toast } from "sonner"
 import { formSchema } from "@/Validations/auth.validations"
+import { CheckItem } from '../../helpers/checkitem'
+
+
+const SetEmail = (email: string) => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem("email", email);
+    }
+}
 
 export default function SignUp() {
     const [mounted, setMounted] = React.useState(false)
@@ -40,7 +48,7 @@ export default function SignUp() {
             name: "",
             email: "",
             password: "",
-            role: "buyer",
+            role: "buyer" as const,
             isVerified: false,
         },
     })
@@ -52,6 +60,7 @@ export default function SignUp() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
             setIsLoading(true)
+            SetEmail(values.email);
             console.log("Form values being sent:", values);
 
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080"
@@ -207,26 +216,70 @@ export default function SignUp() {
                             <FormField
                                 control={form.control}
                                 name="password"
-                                render={({ field }) => (
-                                    <FormItem className="space-y-1.5">
-                                        <FormLabel className="text-xs font-semibold uppercase text-accent tracking-wide">
-                                            Password
-                                        </FormLabel>
-                                        <FormControl>
-                                            <div className="relative group">
-                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                                <Input
-                                                    type="password"
-                                                    placeholder="Aa1@example"
-                                                    {...field}
-                                                    className="pl-9 h-10 bg-background/50 focus:bg-background transition-all"
-                                                />
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage className="text-[10px] mt-0.5" />
-                                    </FormItem>
-                                )}
+                                render={({ field }) => {
+                                    const password = field.value || "";
+
+                                    const hasUpper = /[A-Z]/.test(password);
+                                    const hasLower = /[a-z]/.test(password);
+                                    const hasNumber = /[0-9]/.test(password);
+                                    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+                                    const isLong = password.length >= 8;
+
+                                    const strengthScore = [hasUpper, hasLower, hasNumber, hasSymbol, isLong].filter(Boolean).length;
+
+                                    let strength: "Weak" | "Medium" | "Strong" = "Weak";
+                                    if (strengthScore >= 4) strength = "Strong";
+                                    else if (strengthScore === 3) strength = "Medium";
+
+                                    return (
+                                        <FormItem className="space-y-1.5">
+                                            <FormLabel className="text-xs font-semibold uppercase text-accent tracking-wide">
+                                                Password
+                                            </FormLabel>
+
+                                            <FormControl>
+                                                <div className="relative group">
+                                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                                    <Input
+                                                        type="password"
+                                                        placeholder="Aa1@example"
+                                                        {...field}
+                                                        className="pl-9 h-10 bg-background/50 focus:bg-background transition-all"
+                                                    />
+                                                </div>
+                                            </FormControl>
+
+                                            {/* Password Strength */}
+                                            {password.length > 0 && (
+                                                <p
+                                                    className={`text-xs font-semibold ${strength === "Weak"
+                                                        ? "text-red-500"
+                                                        : strength === "Medium"
+                                                            ? "text-muted-foreground"
+                                                            : "text-primary"
+                                                        }`}
+                                                >
+                                                    {strength}
+                                                </p>
+                                            )}
+
+                                            {/* Validation Checklist */}
+                                            {password.length > 0 && (
+                                                <ul className="text-xs space-y-1 mt-1  mr-2 flex flex-wrap">
+                                                    <CheckItem label="At least 1 uppercase (A-Z)" valid={hasUpper} />
+                                                    <CheckItem label="At least 1 lowercase (a-z)" valid={hasLower} />
+                                                    <CheckItem label="At least 1 number (0-9)" valid={hasNumber} />
+                                                    <CheckItem label="At least 1 symbol (!@#$%)" valid={hasSymbol} />
+                                                    <CheckItem label="Minimum 6  characters" valid={isLong} />
+                                                </ul>
+                                            )}
+
+                                            <FormMessage className="text-[10px] mt-0.5" />
+                                        </FormItem>
+                                    );
+                                }}
                             />
+
 
                             {/* Submit Button */}
                             <div className="pt-2">
@@ -270,4 +323,6 @@ export default function SignUp() {
         </div>
     );
 }
+
+
 
