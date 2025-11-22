@@ -25,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PawPrint, Mail, Lock, User, UserCircle, ArrowRight } from "lucide-react"
 import React, { use } from "react"
 import { useRouter } from "next/navigation"
+import axios from "axios"
 
 export const formSchema = z.object({
     name: z.string().min(2, {
@@ -48,17 +49,18 @@ export function AuthForm() {
     })
 
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        // Do something with the form values.
-        // ✅ This will be type-safe and validated.
-        console.log(values)
-    }
+    // function onSubmit(values: z.infer<typeof formSchema>) {
+    //     // Do something with the form values.
+    //     // ✅ This will be type-safe and validated.
+    //     console.log(values)
+    // }
 
-    return null
+    // return null
 }
 
 export default function SignUp() {
     const [mounted, setMounted] = React.useState(false)
+    const [isLoading, setIsLoading] = React.useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -74,13 +76,35 @@ export default function SignUp() {
         setMounted(true)
     }, [])
 
-    const router = useRouter();
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log(values)
 
-        // After successful submission, navigate to verify-otp
-        if (typeof window !== 'undefined') {
+    const router = useRouter();
+
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        try {
+            setIsLoading(true)
+
+            const res = await axios.post(
+                `${process.env.NEXT_PUBLIC_BASE_URL}/v1/api/auth/send-otp`,
+                values
+            )
+
+            console.log('Response:', res.data)
+
+            // After successful submission, navigate to verify-otp
             router.push('/verify-otp')
+
+        } catch (error) {
+            console.error('Error submitting form:', error)
+
+            // Show error message to user
+            if (axios.isAxiosError(error)) {
+                const errorMessage = error.response?.data?.message || 'Failed to send OTP. Please try again.'
+                alert(errorMessage) // Consider using a toast notification instead
+            } else {
+                alert('An unexpected error occurred. Please try again.')
+            }
+        } finally {
+            setIsLoading(false)
         }
     }
 
@@ -227,11 +251,21 @@ export default function SignUp() {
                             <div className="pt-2">
                                 <Button
                                     type="submit"
-                                    className="w-full cursor-pointer h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all group"
+                                    disabled={isLoading}
+                                    className="w-full cursor-pointer h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                                     suppressHydrationWarning
                                 >
-                                    Verify Account
-                                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                    {isLoading ? (
+                                        <>
+                                            <span className="animate-spin mr-2">⏳</span>
+                                            Sending OTP...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Verify Account
+                                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                                        </>
+                                    )}
                                 </Button>
                             </div>
 
