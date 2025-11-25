@@ -1,61 +1,50 @@
+'use client'
+
 import React, { Suspense } from 'react'
 import { BuyerNavbar } from '@/components/landing/BuyerNavbar'
 import AdBanner from '@/components/landing/AdBanner'
 import { PetCard } from '@/components/landing/PetCard'
 import FiltersPanel from '@/components/landing/FiltersPanel'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import axios from 'axios';
+import { useState, useEffect } from 'react'
+import { useDispatch, useSelector } from "react-redux";
+// import { setPets } from "@/redux/petSlice";
+import { setPets } from '@/store/slices/PetSlice'
 
 const BuyerHome = () => {
-    const samplePets = [
-        {
-            name: "Buddy",
-            breed: "Golden Retriever",
-            age: "2 years",
-            price: "₹15,000",
-            location: "New York, NY",
-            image: "https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=800&q=80",
-            verified: true,
-            rating: 4.8,
-            seller: "Happy Pets",
-            description: "Friendly and energetic companion, great with kids and families. Fully vaccinated and well-trained."
-        },
-        {
-            name: "Luna",
-            breed: "Siberian Husky",
-            age: "1 year",
-            price: "₹20,000",
-            location: "Los Angeles, CA",
-            image: "https://images.unsplash.com/photo-1568572933382-74d440642117?w=800&q=80",
-            verified: true,
-            rating: 4.9,
-            seller: "Pawsome Pets",
-            description: "Beautiful blue eyes, active and playful. Loves outdoor activities and requires regular exercise."
-        },
-        {
-            name: "Max",
-            breed: "German Shepherd",
-            age: "3 years",
-            price: "₹18,000",
-            location: "Chicago, IL",
-            image: "https://images.unsplash.com/photo-1568393691622-c7ba131d63b4?w=800&q=80",
-            verified: false,
-            rating: 4.6,
-            seller: "Pet Paradise",
-            description: "Intelligent and loyal protector. Well-behaved, obedient, and excellent for security and companionship."
-        },
-        {
-            name: "Bella",
-            breed: "French Bulldog",
-            age: "1.5 years",
-            price: "₹12,000",
-            location: "Miami, FL",
-            image: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=80",
-            verified: true,
-            rating: 4.7,
-            seller: "Elite Pets",
-            description: "Adorable and affectionate lapdog, perfect for apartment living. Low maintenance and loves attention."
+    const dispatch = useDispatch();
+    const pets = useSelector((state: any) => state.pet);
+    const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
+
+    const fetchPets = async () => {
+        try {
+            const response = await axios.get(`${BaseURL}/v1/api/buyer/pets`, {
+                withCredentials: true
+            });
+            const data = response.data.pets;
+            console.log("=== BACKEND RESPONSE DEBUG ===");
+            console.log("Full Response:", response.data);
+            console.log("Pets Array:", data);
+            console.log("Number of Pets:", data?.length);
+            if (data && data.length > 0) {
+                console.log("First Pet Sample:", data[0]);
+                console.log("First Pet Seller:", data[0].seller);
+                console.log("First Pet Images:", data[0].images || data[0].image);
+                console.log("First Pet Location:", data[0].location);
+            }
+            console.log("=== END DEBUG ===");
+            dispatch(setPets(data));
+        } catch (error) {
+            console.error("Error fetching pets:", error);
         }
-    ];
+    }
+
+    useEffect(() => {
+        fetchPets();
+    }, []);
+
+
 
     return (
         <div>
@@ -78,9 +67,15 @@ const BuyerHome = () => {
 
                 {/* Pet Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-7">
-                    {samplePets.map((pet, index) => (
-                        <PetCard key={index} pet={pet} />
-                    ))}
+                    {pets && pets.length > 0 ? (
+                        pets.map((pet: any, index: number) => (
+                            <PetCard key={pet.id || index} pet={pet} />
+                        ))
+                    ) : (
+                        <div className="col-span-full text-center py-12">
+                            <p className="text-muted-foreground">No pets available at the moment</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

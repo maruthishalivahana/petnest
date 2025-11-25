@@ -9,15 +9,23 @@ import Image from 'next/image';
 
 interface Pet {
     name: string;
-    breed: string;
+    breedName: string;
     age: string;
-    price: string;
-    location: string;
-    image: string;
-    verified?: boolean;
-    rating?: number;
-    seller?: string;
+    price: number;
+    location: { city: string; state: string; pincode: string };
+    images?: string[];
+    isVerified?: boolean;
+    sellerId?: {
+        userId: {
+            name: string;
+            _id: string;
+        };
+        brandName: string;
+        _id: string;
+    };
     description?: string;
+    category?: string;
+    currency?: string;
 }
 
 interface PetCardProps {
@@ -34,16 +42,54 @@ export function PetCard({ pet }: PetCardProps) {
 
     const {
         name,
-        breed,
+        breedName,
         age,
         price,
         location,
-        image,
-        verified = false,
-        rating,
-        seller,
+        images,
+        isVerified = false,
+        sellerId,
         description,
+        currency = '₹',
     } = pet;
+
+    // Format location
+    const formatLocation = () => {
+        if (location) {
+            const parts = [location.city, location.state, location.pincode].filter(Boolean);
+            return parts.join(', ') || 'Location not specified';
+        }
+        return 'Location not specified';
+    };
+
+    // Get seller name
+    const getSellerName = () => {
+        if (sellerId?.userId?.name) {
+            return sellerId.userId.name;
+        }
+        if (sellerId?.brandName) {
+            return sellerId.brandName;
+        }
+        return null;
+    };
+
+    // Get image URL
+    const getImageUrl = () => {
+        if (images && Array.isArray(images) && images.length > 0) {
+            const firstImage = images[0];
+            if (firstImage && firstImage.trim() !== '') {
+                return firstImage;
+            }
+        }
+        return 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80';
+    };
+
+    const imageUrl = getImageUrl();
+    const sellerName = getSellerName();
+
+    // Convert currency string to rupee symbol
+    const currencySymbol = currency?.toLowerCase() === 'indian' ? '₹' : (currency || '₹');
+    const formattedPrice = typeof price === 'number' ? `${currencySymbol}${price.toLocaleString()}` : `${currencySymbol}${price}`;
 
     return (
         <Card className="group relative overflow-hidden rounded-2xl border bg-card shadow-lg transition-all duration-300 hover:shadow-2xl max-w-md p-0">
@@ -51,8 +97,8 @@ export function PetCard({ pet }: PetCardProps) {
             {/* --- Image Section --- */}
             <div className="relative aspect-[4/3] overflow-hidden bg-muted/30">
                 <Image
-                    src={image}
-                    alt={`${name} - ${breed}`}
+                    src={imageUrl}
+                    alt={`${name} - ${breedName}`}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -60,7 +106,7 @@ export function PetCard({ pet }: PetCardProps) {
                 />
 
                 {/* Verified Badge - Top Left */}
-                {verified && (
+                {isVerified && (
                     <div className="absolute top-3 left-3 z-10">
                         <div className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 backdrop-blur-sm">
                             <Shield className="w-4 h-4 text-primary-foreground fill-primary-foreground" />
@@ -91,14 +137,8 @@ export function PetCard({ pet }: PetCardProps) {
                         <h3 className="font-bold text-2xl text-foreground leading-tight truncate">
                             {name}
                         </h3>
-                        <p className="text-base text-muted-foreground mt-1">{breed}</p>
+                        <p className="text-base text-muted-foreground mt-1">{breedName}</p>
                     </div>
-                    {rating && (
-                        <div className="flex items-center gap-1 text-base font-semibold flex-shrink-0">
-                            <Star className="w-4 h-4 fill-accent text-accent" />
-                            <span className="text-foreground">{rating.toFixed(1)}</span>
-                        </div>
-                    )}
                 </div>
 
                 {/* Age and Location */}
@@ -107,14 +147,14 @@ export function PetCard({ pet }: PetCardProps) {
                         <span className="font-medium">{age}</span>
                         <div className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
-                            <span>{location}</span>
+                            <span>{formatLocation()}</span>
                         </div>
                     </div>
 
                     {/* Seller Info */}
-                    {seller && (
+                    {sellerName && (
                         <p className="text-sm text-muted-foreground">
-                            by <span className="font-medium text-foreground">{seller}</span>
+                            by <span className="font-medium text-foreground">{sellerName}</span>
                         </p>
                     )}
                 </div>
@@ -130,7 +170,7 @@ export function PetCard({ pet }: PetCardProps) {
                 <div className="flex items-center justify-between gap-3 pt-1">
                     <div className="flex-1">
                         <span className="text-3xl font-bold text-primary">
-                            {price}
+                            {formattedPrice}
                         </span>
                     </div>
                     <Button
