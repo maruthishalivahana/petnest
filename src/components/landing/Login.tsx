@@ -12,36 +12,58 @@ import { useForm } from 'react-hook-form'
 import { loginFormSchema } from '@/Validations/auth.validations'
 import { z } from 'zod'
 import axios from 'axios'
-import { notFound } from 'next/navigation'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
+import { useAuth } from '@/contexts/AuthContext'
+import { getRoleRoute } from '@/utils/roleRoutes'
 
 // removed unused import
 const Login = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { login } = useAuth();
+    const [isLoading, setIsLoading] = useState(false);
+
     const form = useForm({
         defaultValues: {
             email: "",
             password: ""
-
         }
     })
     const url = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080"
 
     const onSubmit = async (values: z.infer<typeof loginFormSchema>) => {
         try {
+            setIsLoading(true);
 
+            const response = await axios.post(`${url}/v1/api/auth/login`, values, {
+                withCredentials: true,
+            });
 
-            const data = await axios.post(`${url}/v1/api/auth/login`, values);
-            console.log(data);
-            toast.success('login successfull')
-            router.push('/home')
-            return data;
+            const { user, token } = response.data;
+
+            // Save user data and token using auth context
+            login(user, token);
+
+            console.log("Login successful:", user);
+            toast.success('Login successful!');
+
+            // Get redirect path from query params or use role-based default route
+            const redirectPath = searchParams.get('redirect') || getRoleRoute(user.role);
+
+            // Redirect based on user role
+            router.push(redirectPath);
 
         } catch (error) {
-            console.error("Login failed:", error);
-            notFound();
-
+            setIsLoading(false);
+            if (axios.isAxiosError(error)) {
+                const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials.";
+                toast.error(errorMessage);
+                console.error("Login failed:", error.response?.data);
+            } else {
+                toast.error("An unexpected error occurred.");
+                console.error("Login failed:", error);
+            }
         }
     }
     // Removed automatic submit on mount to avoid calling onSubmit without form values.
@@ -129,11 +151,18 @@ const Login = () => {
                             <div className="pt-2">
                                 <Button
                                     type="submit"
-
+                                    disabled={isLoading}
                                     className="w-full cursor-pointer h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                                     suppressHydrationWarning
                                 >
-                                    Login
+                                    {isLoading ? (
+                                        <>
+                                            <span className="animate-spin mr-2">⏳</span>
+                                            Logging in...
+                                        </>
+                                    ) : (
+                                        "Login"
+                                    )}
                                 </Button>
                             </div>
                             {/* Login Link */}
