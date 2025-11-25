@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 import { PawPrint, ShieldCheck, MessageCircle, CheckCircle2, User } from "lucide-react";
 
@@ -82,10 +83,22 @@ export default function ComingSoon() {
                         </div>
                         <span className="text-xl font-bold tracking-tight">PetNest</span>
                     </div>
-                    <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-                        <span>Verified Sellers</span>
-                        <span>Ethical Adoption</span>
-                        <span className="text-primary">Coming Soon</span>
+                    <div className="flex items-center gap-4">
+                        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground mr-4">
+                            <span>Verified Sellers</span>
+                            <span>Ethical Adoption</span>
+                            <span className="text-primary">Coming Soon</span>
+                        </div>
+                        <Link href="/login">
+                            <Button variant="ghost" className="text-sm font-medium">
+                                Login
+                            </Button>
+                        </Link>
+                        <Link href="/signup">
+                            <Button className="text-sm font-medium bg-primary hover:bg-primary/90">
+                                Sign Up
+                            </Button>
+                        </Link>
                     </div>
                 </nav>
 
@@ -152,10 +165,22 @@ export default function ComingSoon() {
                     </div>
                     <span className="text-xl font-bold tracking-tight">PetNest</span>
                 </div>
-                <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
-                    <span>Verified Sellers</span>
-                    <span>Ethical Adoption</span>
-                    <span className="text-primary">Coming Soon</span>
+                <div className="flex items-center gap-4">
+                    <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground mr-4">
+                        <span>Verified Sellers</span>
+                        <span>Ethical Adoption</span>
+                        <span className="text-primary">Coming Soon</span>
+                    </div>
+                    <Link href="/login">
+                        <Button variant="ghost" className="text-sm font-medium">
+                            Login
+                        </Button>
+                    </Link>
+                    <Link href="/signup">
+                        <Button className="text-sm font-medium bg-primary hover:bg-primary/90">
+                            Sign Up
+                        </Button>
+                    </Link>
                 </div>
             </nav>
 

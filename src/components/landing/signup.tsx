@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { set, z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
     Form,
@@ -23,44 +23,27 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PawPrint, Mail, Lock, User, UserCircle, ArrowRight } from "lucide-react"
-import React, { use } from "react"
+import React from "react"
 import { useRouter } from "next/navigation"
 import axios from "axios"
-
-export const formSchema = z.object({
-    name: z.string().min(2, {
-        message: "Username must be at least 2 characters.",
-    }),
-    email: z.string().email({ message: "Email is required" }),
-    password: z.string().min(6).max(50),
-    role: z.enum(['Buyer', 'Seller', 'Admin'])
-})
-
-export function AuthForm() {
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: "",
-            email: "",
-            password: "",
-            role: "Buyer",
-        },
-    })
+import { toast } from "sonner"
+import { formSchema } from "@/Validations/auth.validations"
+import { CheckItem } from '../../helpers/checkitem'
+import { Eye, EyeOff } from "lucide-react"
+import { useState } from "react"
 
 
-    // function onSubmit(values: z.infer<typeof formSchema>) {
-    //     // Do something with the form values.
-    //     // ✅ This will be type-safe and validated.
-    //     console.log(values)
-    // }
-
-    // return null
+const SetEmail = (email: string) => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem("email", email);
+    }
 }
 
 export default function SignUp() {
+    const [showPassword, setShowPassword] = useState(false)
     const [mounted, setMounted] = React.useState(false)
     const [isLoading, setIsLoading] = React.useState(false)
+    const router = useRouter()
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -68,7 +51,8 @@ export default function SignUp() {
             name: "",
             email: "",
             password: "",
-            role: "Buyer",
+            role: "buyer" as const,
+            isVerified: false,
         },
     })
 
@@ -76,38 +60,44 @@ export default function SignUp() {
         setMounted(true)
     }, [])
 
-
-    const router = useRouter();
-
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
             setIsLoading(true)
+            SetEmail(values.email);
+            console.log("Form values being sent:", values);
+
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080"
 
             const res = await axios.post(
-                `${process.env.NEXT_PUBLIC_BASE_URL}/v1/api/auth/send-otp`,
-                values
+                `${baseUrl}/v1/api/auth/signup`,
+                values,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                }
             )
 
-            console.log('Response:', res.data)
-
-            // After successful submission, navigate to verify-otp
+            const data = await res.data;
+            console.log("Signup successful:", data);
+            toast.success("Signup successful! Please verify your email OTP.")
             router.push('/verify-otp')
 
         } catch (error) {
-            console.error('Error submitting form:', error)
-
-            // Show error message to user
             if (axios.isAxiosError(error)) {
-                const errorMessage = error.response?.data?.message || 'Failed to send OTP. Please try again.'
-                alert(errorMessage) // Consider using a toast notification instead
+                console.error("Signup failed:", {
+                    status: error.response?.status,
+                    data: error.response?.data,
+                    message: error.message,
+                });
+                toast.error(error.response?.data?.message || "Signup failed. Please try again.");
             } else {
-                alert('An unexpected error occurred. Please try again.')
+                console.error("Signup failed:", error);
+                toast.error("An unexpected error occurred.");
             }
-        } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
     }
-
     const handleLoginLink = () => {
         if (typeof window !== 'undefined') {
             router.push('/login')
@@ -176,7 +166,10 @@ export default function SignUp() {
                                             <FormLabel className="text-xs font-semibold uppercase text-accent tracking-wide">
                                                 I am a...
                                             </FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <Select
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                            >
                                                 <FormControl>
                                                     <div className="relative group">
                                                         <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary z-10 pointer-events-none transition-colors" />
@@ -186,9 +179,9 @@ export default function SignUp() {
                                                     </div>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    <SelectItem value="Buyer">Pet Adopter</SelectItem>
-                                                    <SelectItem value="Seller">Breeder / Seller</SelectItem>
-                                                    <SelectItem value="Admin">Admin</SelectItem>
+                                                    <SelectItem value="buyer">Buyer</SelectItem>
+                                                    <SelectItem value="seller">Seller</SelectItem>
+                                                    <SelectItem value="admin">Admin</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage className="text-[10px] mt-0.5" />
@@ -226,26 +219,83 @@ export default function SignUp() {
                             <FormField
                                 control={form.control}
                                 name="password"
-                                render={({ field }) => (
-                                    <FormItem className="space-y-1.5">
-                                        <FormLabel className="text-xs font-semibold uppercase text-accent tracking-wide">
-                                            Password
-                                        </FormLabel>
-                                        <FormControl>
-                                            <div className="relative group">
-                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                                                <Input
-                                                    type="password"
-                                                    placeholder="Min 6 chars"
-                                                    {...field}
-                                                    className="pl-9 h-10 bg-background/50 focus:bg-background transition-all"
-                                                />
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage className="text-[10px] mt-0.5" />
-                                    </FormItem>
-                                )}
+                                render={({ field }) => {
+                                    const password = field.value || "";
+
+                                    const hasUpper = /[A-Z]/.test(password);
+                                    const hasLower = /[a-z]/.test(password);
+                                    const hasNumber = /[0-9]/.test(password);
+                                    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+                                    const isLong = password.length >= 6;
+
+                                    const strengthScore = [hasUpper, hasLower, hasNumber, hasSymbol, isLong].filter(Boolean).length;
+
+                                    let strength: "Weak" | "Medium" | "Strong" = "Weak";
+                                    if (strengthScore >= 4) strength = "Strong";
+                                    else if (strengthScore === 3) strength = "Medium";
+
+                                    return (
+                                        <FormItem className="space-y-1.5">
+                                            <FormLabel className="text-xs font-semibold uppercase text-accent tracking-wide">
+                                                Password
+                                            </FormLabel>
+
+                                            <FormControl>
+                                                <div className="relative group">
+                                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                                    <Input
+                                                        type={showPassword ? "text" : "password"}
+                                                        placeholder="Aa1@example"
+                                                        {...field}
+                                                        className="pl-9 h-10 bg-background/50 focus:bg-background transition-all"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 
+               text-muted-foreground hover:text-primary transition-colors"
+                                                    >
+                                                        {showPassword ? (
+                                                            <EyeOff size={18} />
+                                                        ) : (
+                                                            <Eye size={18} />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </FormControl>
+
+                                            {/* Password Strength */}
+                                            {password.length > 0 && (
+                                                <p
+                                                    className={`text-xs font-semibold ${strength === "Weak"
+                                                        ? "text-red-500"
+                                                        : strength === "Medium"
+                                                            ? "text-muted-foreground"
+                                                            : "text-primary"
+                                                        }`}
+                                                >
+                                                    {strength}
+                                                </p>
+                                            )}
+
+                                            {/* Validation Checklist */}
+                                            {password.length > 0 && (
+                                                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
+                                                    <CheckItem label="At least 1 uppercase (A-Z)" valid={hasUpper} />
+                                                    <CheckItem label="At least 1 lowercase (a-z)" valid={hasLower} />
+                                                    <CheckItem label="At least 1 number (0-9)" valid={hasNumber} />
+                                                    <CheckItem label="At least 1 symbol (!@#$%)" valid={hasSymbol} />
+                                                    <CheckItem label="Minimum 6 characters" valid={isLong} />
+                                                </ul>
+                                            )
+                                            }
+
+                                            <FormMessage className="text-[10px] mt-0.5" />
+                                        </FormItem>
+                                    );
+                                }}
                             />
+
 
                             {/* Submit Button */}
                             <div className="pt-2">
@@ -259,6 +309,7 @@ export default function SignUp() {
                                         <>
                                             <span className="animate-spin mr-2">⏳</span>
                                             Sending OTP...
+
                                         </>
                                     ) : (
                                         <>
@@ -285,7 +336,9 @@ export default function SignUp() {
                     </Form>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }
+
+
 

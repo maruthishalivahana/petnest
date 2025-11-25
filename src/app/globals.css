@@ -107,6 +107,11 @@
   --sidebar-border: oklch(0.723 0.095 64.76);
   /* #606C38 - Olive green sidebar ring */
   --sidebar-ring: oklch(0.461 0.066 128.04);
+  
+  /* Password strength colors */
+  --password-weak: oklch(0.627 0.258 29.23);
+  --password-medium: oklch(0.723 0.095 64.76);
+  --password-strong: oklch(0.461 0.066 128.04);
 }
 
 .dark {

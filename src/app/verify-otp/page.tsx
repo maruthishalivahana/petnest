@@ -1,10 +1,11 @@
+
+"use client"
 import React from 'react'
+import { EmailVerify } from '../../components/landing/EmailVerify';
 
 function page() {
     return (
-        <div>
-            please verify your email otp
-        </div>
+        <EmailVerify />
     )
 }
 
