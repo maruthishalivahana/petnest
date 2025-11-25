@@ -29,6 +29,8 @@ import axios from "axios"
 import { toast } from "sonner"
 import { formSchema } from "@/Validations/auth.validations"
 import { CheckItem } from '../../helpers/checkitem'
+import { Eye, EyeOff } from "lucide-react"
+import { useState } from "react"
 
 
 const SetEmail = (email: string) => {
@@ -38,6 +40,7 @@ const SetEmail = (email: string) => {
 }
 
 export default function SignUp() {
+    const [showPassword, setShowPassword] = useState(false)
     const [mounted, setMounted] = React.useState(false)
     const [isLoading, setIsLoading] = React.useState(false)
     const router = useRouter()
@@ -223,7 +226,7 @@ export default function SignUp() {
                                     const hasLower = /[a-z]/.test(password);
                                     const hasNumber = /[0-9]/.test(password);
                                     const hasSymbol = /[^A-Za-z0-9]/.test(password);
-                                    const isLong = password.length >= 8;
+                                    const isLong = password.length >= 6;
 
                                     const strengthScore = [hasUpper, hasLower, hasNumber, hasSymbol, isLong].filter(Boolean).length;
 
@@ -241,11 +244,23 @@ export default function SignUp() {
                                                 <div className="relative group">
                                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                                     <Input
-                                                        type="password"
+                                                        type={showPassword ? "text" : "password"}
                                                         placeholder="Aa1@example"
                                                         {...field}
                                                         className="pl-9 h-10 bg-background/50 focus:bg-background transition-all"
                                                     />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 
+               text-muted-foreground hover:text-primary transition-colors"
+                                                    >
+                                                        {showPassword ? (
+                                                            <EyeOff size={18} />
+                                                        ) : (
+                                                            <Eye size={18} />
+                                                        )}
+                                                    </button>
                                                 </div>
                                             </FormControl>
 
@@ -265,14 +280,15 @@ export default function SignUp() {
 
                                             {/* Validation Checklist */}
                                             {password.length > 0 && (
-                                                <ul className="text-xs space-y-1 mt-1  mr-2 flex flex-wrap">
+                                                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
                                                     <CheckItem label="At least 1 uppercase (A-Z)" valid={hasUpper} />
                                                     <CheckItem label="At least 1 lowercase (a-z)" valid={hasLower} />
                                                     <CheckItem label="At least 1 number (0-9)" valid={hasNumber} />
                                                     <CheckItem label="At least 1 symbol (!@#$%)" valid={hasSymbol} />
-                                                    <CheckItem label="Minimum 6  characters" valid={isLong} />
+                                                    <CheckItem label="Minimum 6 characters" valid={isLong} />
                                                 </ul>
-                                            )}
+                                            )
+                                            }
 
                                             <FormMessage className="text-[10px] mt-0.5" />
                                         </FormItem>
@@ -320,7 +336,7 @@ export default function SignUp() {
                     </Form>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }
 
