@@ -226,7 +226,7 @@ export default function SignUp() {
                                     const hasLower = /[a-z]/.test(password);
                                     const hasNumber = /[0-9]/.test(password);
                                     const hasSymbol = /[^A-Za-z0-9]/.test(password);
-                                    const isLong = password.length >= 8;
+                                    const isLong = password.length >= 6;
 
                                     const strengthScore = [hasUpper, hasLower, hasNumber, hasSymbol, isLong].filter(Boolean).length;
 
