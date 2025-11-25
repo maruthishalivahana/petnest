@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import { BuyerNavbar } from '@/components/landing/BuyerNavbar'
 import AdBanner from '@/components/landing/AdBanner'
 import { PetCard } from '@/components/landing/PetCard'
@@ -68,7 +68,11 @@ const page = () => {
 
                 {/* Filters Panel - Top Row */}
                 <div className="mb-6">
-                    <FiltersPanel />
+                    <Suspense fallback={
+                        <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+                    }>
+                        <FiltersPanel />
+                    </Suspense>
                 </div>
 
                 {/* Pet Cards Grid */}
