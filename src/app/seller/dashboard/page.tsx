@@ -2,7 +2,9 @@
 
 import React from 'react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { logout } from '@/store/slices/authSlice';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -17,7 +19,14 @@ import {
 } from 'lucide-react';
 
 function SellerDashboardContent() {
-    const { user, logout } = useAuth();
+    const { user } = useAppSelector((state) => state.auth);
+    const dispatch = useAppDispatch();
+    const router = useRouter();
+
+    const handleLogout = () => {
+        dispatch(logout());
+        router.push('/login');
+    };
 
     const stats = [
         { title: 'Active Listings', value: '12', icon: Package, color: 'text-blue-500' },
@@ -47,7 +56,7 @@ function SellerDashboardContent() {
                         </Button>
                         <Button
                             variant="outline"
-                            onClick={logout}
+                            onClick={handleLogout}
                             className="gap-2"
                         >
                             <LogOut className="w-4 h-4" />
