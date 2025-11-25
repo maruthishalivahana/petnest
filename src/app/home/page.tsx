@@ -3,8 +3,9 @@ import { BuyerNavbar } from '@/components/landing/BuyerNavbar'
 import AdBanner from '@/components/landing/AdBanner'
 import { PetCard } from '@/components/landing/PetCard'
 import FiltersPanel from '@/components/landing/FiltersPanel'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
-const page = () => {
+const BuyerHome = () => {
     const samplePets = [
         {
             name: "Buddy",
@@ -86,4 +87,10 @@ const page = () => {
     )
 }
 
-export default page
+export default function BuyerHomePage() {
+    return (
+        <ProtectedRoute allowedRoles={['buyer']}>
+            <BuyerHome />
+        </ProtectedRoute>
+    );
+}
