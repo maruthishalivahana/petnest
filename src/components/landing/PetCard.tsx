@@ -1,13 +1,13 @@
 'use client';
 
-import { Heart, Info, MapPin, MessageCircle, Shield, Star } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { MapPin, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { useState } from 'react';
+import { WishlistButton } from '@/components/wishlist/WishlistButton';
 import Image from 'next/image';
 
 interface Pet {
+    _id?: string;
     name: string;
     breedName: string;
     age: string;
@@ -32,9 +32,9 @@ interface PetCardProps {
     pet: Pet;
 }
 
-export function PetCard({ pet }: PetCardProps) {
-    const [isWishlisted, setIsWishlisted] = useState(false);
+const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
+export function PetCard({ pet }: PetCardProps) {
     // Guard clause to handle undefined pet
     if (!pet) {
         return null;
@@ -116,16 +116,11 @@ export function PetCard({ pet }: PetCardProps) {
                 )}
 
                 {/* Wishlist Button - Top Right */}
-                <button
-                    onClick={() => setIsWishlisted(!isWishlisted)}
-                    className="absolute top-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-card shadow-md transition-all hover:scale-110 active:scale-95 z-10"
-                    aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-                >
-                    <Heart
-                        className={`w-5 h-5 transition-colors ${isWishlisted ? 'fill-destructive text-destructive' : 'text-muted-foreground'
-                            }`}
-                    />
-                </button>
+                {pet._id && (
+                    <div className="absolute top-3 right-3 z-10">
+                        <WishlistButton petId={pet._id} pet={pet as any} />
+                    </div>
+                )}
             </div>
 
             {/* --- Content Section --- */}
