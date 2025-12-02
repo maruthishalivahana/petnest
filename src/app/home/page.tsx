@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense } from 'react'
+import React, { Suspense, use } from 'react'
 import { BuyerNavbar } from '@/components/landing/BuyerNavbar'
 import AdBanner from '@/components/landing/AdBanner'
 import { PetCard } from '@/components/landing/PetCard'
@@ -12,16 +12,25 @@ import { useDispatch, useSelector } from "react-redux";
 // import { setPets } from "@/redux/petSlice";
 import { setPets } from '@/store/slices/PetSlice'
 
+
 const BuyerHome = () => {
     const dispatch = useDispatch();
     const pets = useSelector((state: any) => state.pet);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
     const fetchPets = async () => {
         try {
+            setLoading(true);
+            setError(null);
+
+            console.log("🔍 Fetching from:", `${BaseURL}/v1/api/buyer/pets`);
+
             const response = await axios.get(`${BaseURL}/v1/api/buyer/pets`, {
                 withCredentials: true
             });
+
             const data = response.data.pets;
             console.log("=== BACKEND RESPONSE DEBUG ===");
             console.log("Full Response:", response.data);
@@ -34,11 +43,21 @@ const BuyerHome = () => {
                 console.log("First Pet Location:", data[0].location);
             }
             console.log("=== END DEBUG ===");
-            dispatch(setPets(data));
-        } catch (error) {
-            console.error("Error fetching pets:", error);
+
+            dispatch(setPets(data || []));
+        } catch (error: any) {
+            console.error("❌ Error fetching pets:", error);
+            console.error("Error details:", {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+            });
+            setError(error.response?.data?.message || error.message || 'Failed to load pets');
+        } finally {
+            setLoading(false);
         }
     }
+
 
     useEffect(() => {
         fetchPets();
@@ -67,7 +86,23 @@ const BuyerHome = () => {
 
                 {/* Pet Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-7">
-                    {pets && pets.length > 0 ? (
+                    {loading ? (
+                        // Loading skeleton
+                        Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="bg-gray-100 rounded-xl h-96 animate-pulse" />
+                        ))
+                    ) : error ? (
+                        // Error state
+                        <div className="col-span-full text-center py-12">
+                            <p className="text-red-500 mb-4">❌ {error}</p>
+                            <button
+                                onClick={fetchPets}
+                                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    ) : pets && pets.length > 0 ? (
                         pets.map((pet: any, index: number) => (
                             <PetCard key={pet.id || index} pet={pet} />
                         ))

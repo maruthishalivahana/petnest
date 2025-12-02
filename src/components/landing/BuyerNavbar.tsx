@@ -1,13 +1,24 @@
 
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Menu, X, Heart, User, PawPrint, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '../ui/input';
+import { useDispatch } from "react-redux";
+import axios from 'axios';
+import setWishlist from '@/store/slices/wishlistSlice';
 
+const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
 export function BuyerNavbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
+    const router = useRouter();
+
+    const navigateToWishlist = () => {
+        router.push('/wishlist');
+    };
+
 
     return (
         <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border shadow-sm">
@@ -34,6 +45,7 @@ export function BuyerNavbar() {
                     {/* Desktop/Tablet Actions - Hidden on mobile only */}
                     <div className="hidden md:flex items-center gap-3 xl:gap-4 flex-shrink-0">
                         <Button
+                            onClick={navigateToWishlist}
                             variant="ghost"
                             className="gap-2 h-10"
                         >
@@ -102,6 +114,7 @@ export function BuyerNavbar() {
                                     Profile
                                 </Button>
                                 <Button
+                                    onClick={navigateToWishlist}
                                     variant="outline"
                                     className="w-full rounded-full gap-2 justify-center h-11 sm:h-12 text-sm sm:text-base"
                                 >
