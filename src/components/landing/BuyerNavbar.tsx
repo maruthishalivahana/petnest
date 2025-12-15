@@ -5,15 +5,16 @@ import { useRouter } from 'next/navigation';
 import { Menu, X, Heart, User, PawPrint, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '../ui/input';
-import { useDispatch } from "react-redux";
-import axios from 'axios';
-import setWishlist from '@/store/slices/wishlistSlice';
+import { LogoutButton } from '@/components/auth/LogoutButton';
+import { useAppSelector } from '@/store/hooks';
 
 const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
 export function BuyerNavbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     const router = useRouter();
+    const user = useAppSelector((state) => state.auth.user);
+    const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
 
     const navigateToWishlist = () => {
         router.push('/wishlist');
@@ -59,6 +60,12 @@ export function BuyerNavbar() {
                             <User className="w-4 h-4" />
                             <span className="hidden xl:inline">Profile</span>
                         </Button>
+                        {isAuthenticated && (
+                            <LogoutButton
+                                variant="destructive"
+                                className="rounded-full h-10 w-10"
+                            />
+                        )}
                     </div>
 
                     {/* Mobile Actions */}
@@ -121,6 +128,12 @@ export function BuyerNavbar() {
                                     <Heart className="w-4 h-4" />
                                     Wishlist
                                 </Button>
+                                {isAuthenticated && (
+                                    <LogoutButton
+                                        variant="destructive"
+                                        className="w-full rounded-full h-11 sm:h-12 text-sm sm:text-base"
+                                    />
+                                )}
                             </div>
                         </div>
                     </div>
