@@ -14,6 +14,7 @@ import storage from 'redux-persist/lib/storage';
 import authReducer from './slices/authSlice';
 import petReducer from './slices/PetSlice';
 import wishlistReducer from './slices/wishlistSlice';
+import { authMiddleware } from './middleware/authMiddleware';
 
 // Persist config (NO transforms, NO Set logic)
 const persistConfig = {
@@ -40,7 +41,7 @@ export const store = configureStore({
             serializableCheck: {
                 ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
             },
-        }),
+        }).concat(authMiddleware),
 });
 
 export const persistor = persistStore(store);

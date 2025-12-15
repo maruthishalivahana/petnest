@@ -3,9 +3,10 @@
 import { Heart } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useAppDispatch } from '@/store/hooks';
 import { addWishlistItem, removeWishlistItem } from '@/store/slices/wishlistSlice';
 import { addToWishlist, removeFromWishlist } from '@/services/wishlistApi';
+import { useWishlistStatus } from '@/hooks/useWishlistStatus';
 import { cn } from '@/lib/utils';
 
 type WishlistButtonVariant = 'icon-only' | 'default';
@@ -28,40 +29,72 @@ export function WishlistButton({
     showText,
 }: WishlistButtonProps) {
     const dispatch = useAppDispatch();
-    const wishlistedIds = useAppSelector((state) => state.wishlist.wishlistedIds);
-    const isWishlisted = wishlistedIds.includes(petId);
 
-    const [loading, setLoading] = useState(false);
+    // Use the hook to get real backend status
+    const { isWishlisted: backendIsWishlisted, isLoading: statusLoading } = useWishlistStatus(petId);
+
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    // Use backend status as source of truth
+    const isWishlisted = backendIsWishlisted;
+    const loading = statusLoading || isUpdating;
 
     const handleToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         e.stopPropagation();
 
         if (loading) return;
-        setLoading(true);
+        setIsUpdating(true);
+
+        // Store previous state for rollback
+        const previousState = isWishlisted;
 
         try {
             if (isWishlisted) {
+                // Optimistic update: remove from Redux
                 dispatch(removeWishlistItem(petId));
-                await removeFromWishlist(petId);
+
+                // Call backend
+                const result = await removeFromWishlist(petId);
+
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+
                 toast.success('Removed from wishlist');
             } else {
-                if (pet) dispatch(addWishlistItem(pet));
-                await addToWishlist(petId);
+                // Optimistic update: add to Redux
+                if (pet) {
+                    dispatch(addWishlistItem(pet));
+                }
+
+                // Call backend
+                const result = await addToWishlist(petId);
+
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+
                 toast.success('Added to wishlist');
             }
-        } catch (error) {
-            // revert
-            if (isWishlisted && pet) {
-                dispatch(addWishlistItem(pet));
+        } catch (error: any) {
+            console.error('Wishlist update error:', error);
+
+            // Rollback optimistic update
+            if (previousState) {
+                // Was wishlisted, restore it
+                if (pet) {
+                    dispatch(addWishlistItem(pet));
+                }
             } else {
+                // Was not wishlisted, remove it
                 dispatch(removeWishlistItem(petId));
             }
 
-            toast.error('Failed to update wishlist');
+            toast.error(error.message || 'Failed to update wishlist');
+        } finally {
+            setIsUpdating(false);
         }
-
-        setLoading(false);
     };
 
     const icon = loading ? (
@@ -69,8 +102,8 @@ export function WishlistButton({
     ) : (
         <Heart
             className={cn(
-                'w-5 h-5 transition',
-                isWishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground',
+                'w-5 h-5 transition-all duration-200',
+                isWishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-400',
                 iconClassName
             )}
         />
@@ -83,9 +116,10 @@ export function WishlistButton({
                 onClick={handleToggle}
                 disabled={loading}
                 className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-full bg-card shadow hover:scale-110 disabled:opacity-50',
+                    'flex h-10 w-10 items-center justify-center rounded-full bg-card shadow hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all',
                     className
                 )}
+                aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
             >
                 {icon}
             </button>
@@ -98,13 +132,17 @@ export function WishlistButton({
             onClick={handleToggle}
             disabled={loading}
             className={cn(
-                'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium',
-                isWishlisted ? 'bg-red-50 text-red-600' : 'bg-muted text-muted-foreground',
+                'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                isWishlisted
+                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
                 className
             )}
+            aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
             {icon}
-            {showText && (isWishlisted ? 'Wishlisted' : 'Add to Wishlist')}
+            {showText && <span>{isWishlisted ? 'Wishlisted' : 'Add to Wishlist'}</span>}
         </button>
     );
 }

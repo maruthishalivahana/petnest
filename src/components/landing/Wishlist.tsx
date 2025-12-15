@@ -11,24 +11,32 @@ import { toast } from 'sonner';
 export default function Wishlist() {
     const dispatch = useAppDispatch();
     const wishlistItems = useAppSelector((state) => state.wishlist.items);
+    const user = useAppSelector((state) => state.auth.user);
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetch wishlist only if Redux is empty
+    // Fetch wishlist on mount to get fresh data from backend
     useEffect(() => {
-        if (wishlistItems.length === 0) {
+        if (user) {
+            // Only show loading if no cached data
+            if (wishlistItems.length === 0) {
+                setLoading(true);
+            }
             fetchWishlist();
         }
-    }, []);
+    }, [user]);
 
     const fetchWishlist = async () => {
+        if (!user) return;
+
         try {
-            setLoading(true);
             setError(null);
 
             const items = await getWishlistItems();
-            dispatch(setWishlistItems(items));
+            console.log('Fetched wishlist items:', items);
+            console.log('Items count:', items.length);
+            dispatch(setWishlistItems({ items, userId: user.id }));
         } catch (err: any) {
             console.error('Error fetching wishlist:', err);
             setError(err.message || 'Failed to load wishlist');
@@ -38,7 +46,18 @@ export default function Wishlist() {
         }
     };
 
-    if (loading) return <p>Loading...</p>;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+                        <p className="text-muted-foreground">Loading your wishlist...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     // Error state
     if (error && wishlistItems.length === 0) {
@@ -120,10 +139,20 @@ export default function Wishlist() {
                     </p>
                 </div>
 
+                {/* Debug Info */}
+
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {wishlistItems.map((pet) => (
-                        <PetCard key={pet._id} pet={pet} />
-                    ))}
+                    {wishlistItems.length > 0 ? (
+                        wishlistItems.map((pet) => {
+                            console.log('Rendering pet card:', pet._id, pet.name);
+                            return <PetCard key={pet._id} pet={pet} />;
+                        })
+                    ) : (
+                        <div className="col-span-full text-center py-8 text-muted-foreground">
+                            No pets in wishlist yet
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

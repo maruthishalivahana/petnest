@@ -24,21 +24,27 @@ interface Pet {
 
 interface WishlistState {
     items: Pet[];
-    wishlistedIds: string[]; // <-- FIXED
+    wishlistedIds: string[];
+    userId: string | null; // Track which user owns this wishlist
+    lastFetched: number | null; // Timestamp for cache invalidation
 }
 
 const initialState: WishlistState = {
     items: [],
     wishlistedIds: [],
+    userId: null,
+    lastFetched: null,
 };
 
 const wishlistSlice = createSlice({
     name: "wishlist",
     initialState,
     reducers: {
-        setWishlistItems: (state, action: PayloadAction<Pet[]>) => {
-            state.items = action.payload;
-            state.wishlistedIds = action.payload.map((pet) => pet._id); // <-- FIXED
+        setWishlistItems: (state, action: PayloadAction<{ items: Pet[]; userId: string }>) => {
+            state.items = action.payload.items;
+            state.wishlistedIds = action.payload.items.map((pet) => pet._id);
+            state.userId = action.payload.userId;
+            state.lastFetched = Date.now();
         },
 
         addWishlistItem: (state, action: PayloadAction<Pet>) => {
@@ -60,6 +66,8 @@ const wishlistSlice = createSlice({
         clearWishlist: (state) => {
             state.items = [];
             state.wishlistedIds = [];
+            state.userId = null;
+            state.lastFetched = null;
         },
     },
 });
