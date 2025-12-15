@@ -14,14 +14,15 @@ import { z } from 'zod'
 import axios from 'axios'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAppDispatch } from '@/store/hooks'
+import { setCredentials } from '@/store/slices/authSlice'
 import { getRoleRoute } from '@/utils/roleRoutes'
 
 // removed unused import
 const Login = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { login } = useAuth();
+    const dispatch = useAppDispatch();
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm({
@@ -42,13 +43,11 @@ const Login = () => {
 
             const { user, token } = response.data;
 
-            // Save user data and token using auth context
-            login(user, token);
+            // Save user data and token using Redux
+            dispatch(setCredentials({ user, token }));
 
             console.log("Login successful:", user);
-            toast.success('Login successful!');
-
-            // Get redirect path from query params or use role-based default route
+            toast.success('Login successful!');            // Get redirect path from query params or use role-based default route
             const redirectPath = searchParams.get('redirect') || getRoleRoute(user.role);
 
             // Redirect based on user role
