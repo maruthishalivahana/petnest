@@ -10,6 +10,8 @@ export interface User {
     isVerified: boolean;
 }
 
+type UserWithMongoId = User & { _id?: string };
+
 interface AuthState {
     user: User | null;
     token: string | null;
@@ -24,12 +26,19 @@ const initialState: AuthState = {
     isLoading: true,
 };
 
+const normalizeUser = (user: UserWithMongoId): User => {
+    const { _id, ...rest } = user;
+    return { ...rest, id: user.id ?? _id ?? rest.id };
+};
+
 const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        setCredentials: (state, action: PayloadAction<{ user: User; token: string }>) => {
-            state.user = action.payload.user;
+        setCredentials: (state, action: PayloadAction<{ user: UserWithMongoId; token: string }>) => {
+            const normalizedUser = normalizeUser(action.payload.user);
+
+            state.user = normalizedUser;
             state.token = action.payload.token;
             state.isAuthenticated = true;
             state.isLoading = false;
@@ -37,7 +46,7 @@ const authSlice = createSlice({
             // Persist to localStorage
             if (typeof window !== 'undefined') {
                 localStorage.setItem('token', action.payload.token);
-                localStorage.setItem('user', JSON.stringify(action.payload.user));
+                localStorage.setItem('user', JSON.stringify(normalizedUser));
             }
         },
 
@@ -67,9 +76,9 @@ const authSlice = createSlice({
             state.isLoading = action.payload;
         },
 
-        restoreSession: (state, action: PayloadAction<{ user: User; token: string } | null>) => {
+        restoreSession: (state, action: PayloadAction<{ user: UserWithMongoId; token: string } | null>) => {
             if (action.payload) {
-                state.user = action.payload.user;
+                state.user = normalizeUser(action.payload.user);
                 state.token = action.payload.token;
                 state.isAuthenticated = true;
             }

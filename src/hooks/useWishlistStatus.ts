@@ -43,6 +43,7 @@ export function useWishlistStatus(petId: string) {
                 if (isMounted) {
                     setIsWishlisted(backendStatus);
                 }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (err: any) {
                 console.error('Failed to check wishlist status:', err);
                 if (isMounted) {
@@ -62,6 +63,7 @@ export function useWishlistStatus(petId: string) {
         return () => {
             isMounted = false;
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [petId, userId]); // Re-fetch if petId or user changes
 
     // Sync with Redux updates (optimistic updates)

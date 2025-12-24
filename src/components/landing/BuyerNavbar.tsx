@@ -1,23 +1,41 @@
 
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Menu, X, Heart, User, PawPrint, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '../ui/input';
 import { LogoutButton } from '@/components/auth/LogoutButton';
-import { useAppSelector } from '@/store/hooks';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { setSearchQuery } from '@/store/slices/PetSlice';
 
-const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
 export function BuyerNavbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
     const router = useRouter();
-    const user = useAppSelector((state) => state.auth.user);
+    const searchParams = useSearchParams();
+    const dispatch = useAppDispatch();
     const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+    const searchQuery = useAppSelector((state) => state.pet.searchQuery);
 
     const navigateToWishlist = () => {
         router.push('/wishlist');
+    };
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        dispatch(setSearchQuery(e.target.value));
+    };
+
+    const handleSearchSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        // Navigate to home page with search query
+        const params = new URLSearchParams(searchParams.toString());
+        if (searchQuery.trim()) {
+            params.set('search', searchQuery.trim());
+        } else {
+            params.delete('search');
+        }
+        router.push(`/home?${params.toString()}`);
     };
 
 
@@ -35,13 +53,15 @@ export function BuyerNavbar() {
                     </button>
 
                     {/* Search Bar - Hidden on mobile only */}
-                    <div className="relative w-full max-w-md mx-4 hidden md:block">
+                    <form onSubmit={handleSearchSubmit} className="relative w-full max-w-md mx-4 hidden md:block">
                         <Search className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 w-4 h-4 lg:w-5 lg:h-5 text-muted-foreground pointer-events-none" />
                         <Input
+                            value={searchQuery}
+                            onChange={handleSearchChange}
                             placeholder="Search for pets by breed, location..."
                             className="pl-9 lg:pl-12 pr-4 h-10 lg:h-12 w-full rounded-full text-sm lg:text-base"
                         />
-                    </div>
+                    </form>
 
                     {/* Desktop/Tablet Actions - Hidden on mobile only */}
                     <div className="hidden md:flex items-center gap-3 xl:gap-4 flex-shrink-0">
@@ -97,14 +117,16 @@ export function BuyerNavbar() {
                 {/* Mobile Search Bar - Expandable */}
                 {showMobileSearch && (
                     <div className="py-3 md:hidden">
-                        <div className="relative w-full">
+                        <form onSubmit={handleSearchSubmit} className="relative w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                             <Input
+                                value={searchQuery}
+                                onChange={handleSearchChange}
                                 placeholder="Search for pets..."
                                 className="pl-9 pr-4 h-10 w-full rounded-full text-sm"
                                 autoFocus
                             />
-                        </div>
+                        </form>
                     </div>
                 )}
 

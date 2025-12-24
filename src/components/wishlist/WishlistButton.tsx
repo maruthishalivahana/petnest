@@ -13,6 +13,7 @@ type WishlistButtonVariant = 'icon-only' | 'default';
 
 interface WishlistButtonProps {
     petId: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pet?: any;
     variant?: WishlistButtonVariant;
     className?: string;
@@ -77,6 +78,7 @@ export function WishlistButton({
 
                 toast.success('Added to wishlist');
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error('Wishlist update error:', error);
 
