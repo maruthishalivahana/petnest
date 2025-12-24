@@ -13,7 +13,7 @@ export const petListingSchema = z.object({
     name: z.string().min(2, 'Pet name must be at least 2 characters'),
     breedName: z.string().min(1, 'Please select a breed'),
     gender: z.enum(['Male', 'Female'], {
-        required_error: 'Please select gender',
+        message: 'Please select gender',
     }),
     age: z.coerce.number().positive('Age must be a positive number'),
     price: z.coerce.number().positive('Price must be a positive number'),
