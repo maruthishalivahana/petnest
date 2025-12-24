@@ -25,6 +25,7 @@ export default function Wishlist() {
             }
             fetchWishlist();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     const fetchWishlist = async () => {
@@ -37,6 +38,7 @@ export default function Wishlist() {
             console.log('Fetched wishlist items:', items);
             console.log('Items count:', items.length);
             dispatch(setWishlistItems({ items, userId: user.id }));
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             console.error('Error fetching wishlist:', err);
             setError(err.message || 'Failed to load wishlist');

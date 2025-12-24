@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import Image from "next/image";
 
 import { PawPrint, ShieldCheck, MessageCircle, CheckCircle2, User } from "lucide-react";
 
@@ -13,6 +14,7 @@ function addToWaitlist(email: string): number {
     const list = JSON.parse(localStorage.getItem("waitlist") || "[]");
 
     // Check if email already exists
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const emailExists = list.some((item: any) => item.email === email);
     if (emailExists) {
         return list.length;
@@ -258,7 +260,7 @@ export default function ComingSoon() {
                             <CheckCircle2 size={24} className="text-primary flex-shrink-0" />
                             <div>
                                 <p className="font-semibold text-foreground">Thanks for joining!</p>
-                                <p className="text-sm text-muted-foreground">We'll notify you when we launch.</p>
+                                <p className="text-sm text-muted-foreground">We&apos;ll notify you when we launch.</p>
                             </div>
                         </motion.div>
                     )}
@@ -295,10 +297,12 @@ export default function ComingSoon() {
                     >
                         {/* Fake Image Placeholder */}
                         <div className="h-40 sm:h-44 md:h-48 lg:h-52 bg-secondary rounded-xl sm:rounded-2xl mb-3 sm:mb-4 relative overflow-hidden group cursor-pointer">
-                            <img
+                            <Image
                                 src="https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=400&h=300&fit=crop"
                                 alt="Golden Retriever"
-                                className="w-full h-full object-cover"
+                                fill
+                                className="object-cover"
+                                unoptimized
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                             <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 text-foreground font-bold text-sm sm:text-base">

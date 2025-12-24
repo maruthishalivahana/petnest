@@ -70,7 +70,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
                         router.push(getRoleRoute(loggedUser.role));
                         return;
                     }
-                } catch (err) {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                } catch (_err) {
                     // Not authenticated - send to login with redirect
                     dispatch(logout());
                     setRedirecting(true);

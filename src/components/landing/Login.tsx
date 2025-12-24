@@ -3,7 +3,7 @@
 
 import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import { ArrowRight, Mail, PawPrint, Lock } from 'lucide-react'
+import { Mail, PawPrint, Lock } from 'lucide-react'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -166,7 +166,7 @@ const Login = () => {
                             </div>
                             {/* Login Link */}
                             <div className="text-center text-xs text-muted-foreground pt-1">
-                                Don't have an account?{" "}
+                                Don&apos;t have an account?{" "}
                                 <button
                                     type="button"
                                     onClick={() => router.push('/signup')}

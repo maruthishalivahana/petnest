@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense, use } from 'react'
+import React, { Suspense } from 'react'
 import { BuyerNavbar } from '@/components/landing/BuyerNavbar'
 import AdBanner from '@/components/landing/AdBanner'
 import { PetCard } from '@/components/landing/PetCard'
@@ -9,7 +9,9 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import axios from 'axios';
 import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { setPets } from '@/store/slices/PetSlice'
+import { setPets, setIsSearching } from '@/store/slices/PetSlice'
+import { searchPets } from '@/services/petApi'
+import { useSearchParams } from 'next/navigation'
 // Using standard Lucide icons for UI states (assuming lucide-react is installed, if not, basic SVGs work)
 import { AlertCircle, RefreshCcw, Dog } from 'lucide-react'
 
@@ -19,27 +21,103 @@ const BuyerHome = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
+    const searchParams = useSearchParams();
+
+    // Get search and filter parameters from URL
+    const searchQuery = searchParams.get('search') || '';
+    const category = searchParams.get('category') || '';
+    const gender = searchParams.get('gender') || '';
+    const age = searchParams.get('age') || '';
+    const minPrice = searchParams.get('minPrice') || '';
+    const maxPrice = searchParams.get('maxPrice') || '';
 
     const fetchPets = async () => {
         try {
+            setLoading(true);
             setError(null);
 
-            // console.log("🔍 Fetching from:", `${BaseURL}/v1/api/buyer/pets`);
+            if (searchQuery) {
+                // Use search API when search query is present
+                dispatch(setIsSearching(true));
+                const response = await searchPets(searchQuery);
 
-            const response = await axios.get(`${BaseURL}/v1/api/buyer/pets`, {
-                withCredentials: true
-            });
+                if (response.success) {
+                    let filteredPets = response.data || [];
 
-            const data = response.data.pets;
-            // Debug logs preserved as per original code
-            /* console.log("=== BACKEND RESPONSE DEBUG ===");
-            console.log("Full Response:", response.data);
-            // ... logs
-            */
+                    // Apply client-side filters to search results
+                    if (category) {
+                        filteredPets = filteredPets.filter(pet =>
+                            pet.category?.toLowerCase() === category.toLowerCase()
+                        );
+                    }
+                    if (gender) {
+                        filteredPets = filteredPets.filter(pet =>
+                            pet.gender?.toLowerCase() === gender.toLowerCase()
+                        );
+                    }
+                    if (age) {
+                        filteredPets = filteredPets.filter(pet => pet.age === age);
+                    }
+                    if (minPrice) {
+                        filteredPets = filteredPets.filter(pet => pet.price >= Number(minPrice));
+                    }
+                    if (maxPrice) {
+                        filteredPets = filteredPets.filter(pet => pet.price <= Number(maxPrice));
+                    }
 
-            dispatch(setPets(data || []));
+                    dispatch(setPets(filteredPets));
+                } else {
+                    setError(response.message);
+                }
+            } else if (category || gender || age || minPrice || maxPrice) {
+                // Fetch all pets and apply filters client-side
+                dispatch(setIsSearching(false));
+                const response = await axios.get(`${BaseURL}/v1/api/buyer/pets`, {
+                    withCredentials: true
+                });
+
+                let filteredPets = response.data.pets || [];
+
+                // Apply client-side filters
+                if (category) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    filteredPets = filteredPets.filter((pet: any) =>
+                        pet.category?.toLowerCase() === category.toLowerCase()
+                    );
+                }
+                if (gender) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    filteredPets = filteredPets.filter((pet: any) =>
+                        pet.gender?.toLowerCase() === gender.toLowerCase()
+                    );
+                }
+                if (age) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    filteredPets = filteredPets.filter((pet: any) => pet.age === age);
+                }
+                if (minPrice) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    filteredPets = filteredPets.filter((pet: any) => pet.price >= Number(minPrice));
+                }
+                if (maxPrice) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    filteredPets = filteredPets.filter((pet: any) => pet.price <= Number(maxPrice));
+                }
+
+                dispatch(setPets(filteredPets));
+            } else {
+                // Fetch all pets when no search/filters
+                dispatch(setIsSearching(false));
+                const response = await axios.get(`${BaseURL}/v1/api/buyer/pets`, {
+                    withCredentials: true
+                });
+
+                const data = response.data.pets;
+                dispatch(setPets(data || []));
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
-            console.error(" Error fetching pets:", error);
+            console.error("Error fetching pets:", error);
             setError(error.response?.data?.message || error.message || 'Failed to load pets');
         } finally {
             setLoading(false);
@@ -52,7 +130,8 @@ const BuyerHome = () => {
             setLoading(true);
         }
         fetchPets();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchQuery, category, gender, age, minPrice, maxPrice]); // Refetch when any parameter changes
 
     return (
         <div className="min-h-screen bg-slate-50/80 font-sans text-slate-900">
@@ -69,10 +148,13 @@ const BuyerHome = () => {
                 {/* 1. Page Header & Introduction */}
                 <div className="mb-8 md:mb-10 space-y-2">
                     <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-                        Available Pets
+                        {searchQuery ? `Search Results for "${searchQuery}"` : 'Available Pets'}
                     </h2>
                     <p className="text-lg text-slate-500 max-w-2xl">
-                        Discover your perfect companion from verified breeders and shelters near you.
+                        {searchQuery
+                            ? `Found ${pets?.length || 0} pet${pets?.length !== 1 ? 's' : ''} matching your search`
+                            : 'Discover your perfect companion from verified breeders and shelters near you.'
+                        }
                     </p>
                 </div>
 
@@ -126,6 +208,7 @@ const BuyerHome = () => {
                         </div>
                     ) : pets && pets.length > 0 ? (
                         // 6. Pet Cards
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         pets.map((pet: any, index: number) => (
                             <div key={pet._id || index} className="transition-transform duration-300 hover:-translate-y-1">
                                 <PetCard pet={pet} />
