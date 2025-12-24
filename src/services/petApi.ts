@@ -21,6 +21,7 @@ export interface Pet {
     location: { city: string; state: string; pincode: string };
     images?: string[];
     isVerified?: boolean;
+    isWishlisted?: boolean; // Added for wishlist status from search API
     sellerId?: string | {
         userId?: {
             name: string;
@@ -47,6 +48,7 @@ export interface Pet {
     updatedAt?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ApiResponse<T = any> {
     success: boolean;
     message: string;
@@ -77,11 +79,41 @@ export const getPetById = async (petId: string): Promise<ApiResponse<Pet>> => {
             message: res.data?.message || "Pet details fetched successfully",
             data: res.data?.pet || res.data?.data || res.data || null,
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
         return {
             success: false,
             message: err?.response?.data?.message || "Failed to fetch pet details",
             data: null,
+        };
+    }
+};
+
+// -------------------------
+// Search Pets by Keyword
+// -------------------------
+export const searchPets = async (keyword?: string): Promise<ApiResponse<Pet[]>> => {
+    try {
+        const queryParams = new URLSearchParams();
+
+        if (keyword && keyword.trim()) {
+            queryParams.set("keyword", keyword.trim());
+        }
+
+        const url = `/v1/api/buyer/pets/search${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const res = await api.get(url);
+
+        return {
+            success: true,
+            message: res.data?.message || "Pets fetched successfully",
+            data: res.data?.pets || res.data?.data || [],
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+        return {
+            success: false,
+            message: err?.response?.data?.message || "Failed to search pets",
+            data: [],
         };
     }
 };

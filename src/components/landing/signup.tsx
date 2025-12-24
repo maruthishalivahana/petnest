@@ -2,12 +2,11 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { set, z } from "zod"
+import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
     Form,
     FormControl,
-    FormDescription,
     FormField,
     FormItem,
     FormLabel,
@@ -23,7 +22,6 @@ import {
 } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PawPrint, Mail, Lock, User, UserCircle, ArrowRight } from "lucide-react"
-import React from "react"
 import { useRouter } from "next/navigation"
 import axios from "axios"
 import { toast } from "sonner"
@@ -41,8 +39,7 @@ const SetEmail = (email: string) => {
 
 export default function SignUp() {
     const [showPassword, setShowPassword] = useState(false)
-    const [mounted, setMounted] = React.useState(false)
-    const [isLoading, setIsLoading] = React.useState(false)
+    const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -55,10 +52,6 @@ export default function SignUp() {
             isVerified: false,
         },
     })
-
-    React.useEffect(() => {
-        setMounted(true)
-    }, [])
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {

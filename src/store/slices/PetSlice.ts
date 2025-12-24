@@ -6,6 +6,8 @@ interface PetState {
     currentPet: Pet | null; // Currently viewed pet details
     loading: boolean;
     error: string | null;
+    searchQuery: string; // Current search query
+    isSearching: boolean; // Flag to indicate if search is active
 }
 
 const initialState: PetState = {
@@ -13,6 +15,8 @@ const initialState: PetState = {
     currentPet: null,
     loading: false,
     error: null,
+    searchQuery: "",
+    isSearching: false,
 };
 
 const petSlice = createSlice({
@@ -48,6 +52,22 @@ const petSlice = createSlice({
             state.currentPet = null;
             state.error = null;
         },
+
+        // Set search query
+        setSearchQuery: (state, action: PayloadAction<string>) => {
+            state.searchQuery = action.payload;
+        },
+
+        // Set searching state
+        setIsSearching: (state, action: PayloadAction<boolean>) => {
+            state.isSearching = action.payload;
+        },
+
+        // Clear search
+        clearSearch: (state) => {
+            state.searchQuery = "";
+            state.isSearching = false;
+        },
     },
 });
 
@@ -56,7 +76,10 @@ export const {
     setLoading,
     setCurrentPet,
     setPetError,
-    clearCurrentPet
+    clearCurrentPet,
+    setSearchQuery,
+    setIsSearching,
+    clearSearch
 } = petSlice.actions;
 
 export default petSlice.reducer;

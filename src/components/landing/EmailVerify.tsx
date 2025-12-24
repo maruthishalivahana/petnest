@@ -22,7 +22,7 @@ import {
     InputOTPSlot,
 } from "@/components/ui/input-otp"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { PawPrint, Mail, CheckCircle2, ArrowRight, RefreshCcw, Timer } from "lucide-react"
+import { Mail, CheckCircle2, RefreshCcw, Timer } from "lucide-react"
 const FormSchema = z.object({
     pin: z.string().min(6, {
         message: "Your one-time password must be 6 characters.",
@@ -57,6 +57,7 @@ export function EmailVerify() {
         }
         setEmail(storedEmail)
         console.log("Email from localStorage:", storedEmail)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // Countdown timer for resend OTP
@@ -133,7 +134,8 @@ export function EmailVerify() {
             setIsResending(true)
 
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080"
-            const res = await axios.post(
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const _res = await axios.post(
                 `${baseUrl}/v1/api/auth/resend-otp`,
                 { email: email },
                 {
@@ -179,7 +181,7 @@ export function EmailVerify() {
                                 Verify Your Email
                             </CardTitle>
                             <CardDescription className="text-sm">
-                                We've sent a 6-digit code to {email ? email : 'your email'}
+                                We&apos;ve sent a 6-digit code to {email ? email : 'your email'}
                             </CardDescription>
                         </div>
                     </div>

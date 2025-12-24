@@ -3,7 +3,7 @@
 import ComingSoon from "../../../components/landing/comingsoon";
 
 
-export default function home(react: React.ReactNode) {
+export default function home() {
   return (
     <ComingSoon />
   )

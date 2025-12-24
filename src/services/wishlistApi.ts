@@ -27,6 +27,7 @@ export interface WishlistItem {
     currency?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ApiResponse<T = any> {
     success: boolean;
     message: string;
@@ -56,6 +57,7 @@ export const addToWishlist = async (petId: string): Promise<ApiResponse> => {
             message: res.data?.message || "Added to wishlist",
             data: res.data?.data || null,
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
         return {
             success: false,
@@ -77,6 +79,7 @@ export const removeFromWishlist = async (petId: string): Promise<ApiResponse> =>
             message: res.data?.message || "Removed from wishlist",
             data: res.data?.data || null,
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
         return {
             success: false,
@@ -124,6 +127,7 @@ export const getWishlistItems = async (): Promise<WishlistItem[]> => {
         if (Array.isArray(data) && data.length > 0) {
             if (data[0]?.petId && typeof data[0].petId === 'object') {
                 console.log('Extracting petId objects...');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data = data.map((item: any) => {
                     const pet = item.petId;
                     return {
@@ -145,6 +149,7 @@ export const getWishlistItems = async (): Promise<WishlistItem[]> => {
                 });
             } else if (data[0]?.pet && typeof data[0].pet === 'object') {
                 console.log('Extracting pet objects...');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 data = data.map((item: any) => {
                     const pet = item.pet;
                     return {
@@ -175,6 +180,7 @@ export const getWishlistItems = async (): Promise<WishlistItem[]> => {
         }
 
         return result;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
         console.error("Wishlist Fetch Error:", err);
         console.error("Error response:", err?.response?.data);
@@ -193,6 +199,7 @@ export const checkWishlist = async (petId: string): Promise<boolean> => {
 
         // Normalize response - backend might return different formats
         return res.data?.isWishlisted || res.data?.data?.isWishlisted || false;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
         console.error("Check Wishlist Error:", err);
         // If endpoint fails, return false (not wishlisted)

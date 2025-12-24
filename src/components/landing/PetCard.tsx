@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, Shield, Info, Calendar, User } from 'lucide-react';
+import { MapPin, Shield, Calendar, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
@@ -32,8 +32,6 @@ interface Pet {
 interface PetCardProps {
     pet: Pet;
 }
-
-const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
 export function PetCard({ pet }: PetCardProps) {
     const router = useRouter();
@@ -117,6 +115,7 @@ export function PetCard({ pet }: PetCardProps) {
                 {/* Wishlist Button (Glassmorphism container) */}
                 {pet._id && (
                     <div className="absolute top-3 right-3 z-20 rounded-full bg-white/90 p-1.5 shadow-sm transition-transform active:scale-95">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         <WishlistButton petId={pet._id} pet={pet as any} />
                     </div>
                 )}
