@@ -114,7 +114,7 @@ export default function ListingsManagementPage() {
                     <p className="text-slate-500 mt-1">View and manage all your pet listings</p>
                 </div>
                 <Button asChild>
-                    <Link href="/seller/listings/new">
+                    <Link href="/seller/add-pet">
                         <Plus className="h-4 w-4 mr-2" />
                         Add New Listing
                     </Link>
