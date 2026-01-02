@@ -85,18 +85,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
         return () => {
             isMounted = false;
         };
-    }, [pathname, router, allowedRoles, isAuthenticated, user, isLoading, dispatch]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pathname, isAuthenticated, user]);
 
-    if (isLoading || redirecting) {
+    if (isLoading || redirecting || !isAuthenticated || !user) {
         return (
             <div className="h-screen flex justify-center items-center">
                 <div className="animate-spin h-10 w-10 border-2 border-primary border-t-transparent rounded-full"></div>
             </div>
         );
-    }
-
-    if (!isAuthenticated || !user) {
-        return null;
     }
 
     return <>{children}</>;

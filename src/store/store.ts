@@ -14,6 +14,11 @@ import storage from 'redux-persist/lib/storage';
 import authReducer from './slices/authSlice';
 import petReducer from './slices/PetSlice';
 import wishlistReducer from './slices/wishlistSlice';
+import adminUsersReducer from './slices/adminUsersSlice';
+import adminSellersReducer from './slices/adminSellersSlice';
+import adminPetsReducer from './slices/adminPetsSlice';
+import adminAdvertisementsReducer from './slices/adminAdvertisementsSlice';
+import adminSpeciesReducer from './slices/adminSpeciesSlice';
 import { authMiddleware } from './middleware/authMiddleware';
 
 // Persist config (NO transforms, NO Set logic)
@@ -28,6 +33,11 @@ const rootReducer = combineReducers({
     auth: authReducer,
     pet: petReducer,
     wishlist: wishlistReducer, // Must match state.wishlist
+    adminUsers: adminUsersReducer,
+    adminSellers: adminSellersReducer,
+    adminPets: adminPetsReducer,
+    adminAdvertisements: adminAdvertisementsReducer,
+    adminSpecies: adminSpeciesReducer,
 });
 
 // Create persisted reducer

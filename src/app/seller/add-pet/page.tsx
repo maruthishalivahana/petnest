@@ -21,6 +21,7 @@ import { petListingSchema, PetListingFormData } from '@/Validations/pet.validati
 import { Upload, Loader2, PawPrint, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAllBreedNames, addPetListing } from '@/services/petApi';
+import { getCurrentSellerDetails } from '@/services/seller';
 
 export default function AddPetPage() {
     const router = useRouter();
@@ -29,8 +30,31 @@ export default function AddPetPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [breedNames, setBreedNames] = useState<string[]>([]);
     const [isLoadingBreeds, setIsLoadingBreeds] = useState(true);
+    const [sellerVerified, setSellerVerified] = useState<boolean | null>(null);
+    const [checkingStatus, setCheckingStatus] = useState(true);
 
     useEffect(() => {
+        // Check seller verification status
+        const checkSellerStatus = async () => {
+            try {
+                const sellerData = await getCurrentSellerDetails();
+                console.log('Seller details:', sellerData);
+
+                const status = sellerData?.status;
+                console.log('Seller status:', status, 'Is verified:', status === 'verified');
+
+                setSellerVerified(status === 'verified');
+            } catch (error) {
+                console.error('Error checking seller status:', error);
+                // If no seller profile exists, they're not verified
+                setSellerVerified(false);
+            } finally {
+                setCheckingStatus(false);
+            }
+        };
+
+        checkSellerStatus();
+
         getAllBreedNames().then((names) => {
             console.log('All breed names:', names);
             setBreedNames(names);
@@ -89,6 +113,22 @@ export default function AddPetPage() {
     };
 
     const onSubmit = async (data: PetListingFormData) => {
+        // Check if seller is verified
+        if (sellerVerified === false) {
+            toast.error('Your seller account is not verified yet. Please wait for admin approval before adding pets.', {
+                duration: 5000,
+                description: 'You can check your verification status in the Verification section.'
+            });
+            return;
+        }
+
+        if (sellerVerified === null) {
+            toast.error('Unable to verify seller status. Please try again.', {
+                duration: 5000
+            });
+            return;
+        }
+
         try {
             setIsSubmitting(true);
 
@@ -132,6 +172,15 @@ export default function AddPetPage() {
         }
     };
 
+    // Show loading while checking status
+    if (checkingStatus) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
@@ -147,6 +196,14 @@ export default function AddPetPage() {
                     <p className="text-slate-600">
                         Fill in the details below to list your pet for sale
                     </p>
+                    {sellerVerified === false && (
+                        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-sm text-amber-800">
+                                <strong>⚠️ Verification Required:</strong> Your seller account is pending verification.
+                                You won't be able to publish listings until approved by admin.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)}>

@@ -4,6 +4,7 @@ import React, { Suspense } from 'react'
 import { BuyerNavbar } from '@/components/landing/BuyerNavbar'
 import AdBanner from '@/components/landing/AdBanner'
 import { PetCard } from '@/components/landing/PetCard'
+import { FeaturedPetCard } from '@/components/landing/FeaturedPetCard'
 import FiltersPanel from '@/components/landing/FiltersPanel'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import axios from 'axios';
@@ -12,14 +13,16 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setPets, setIsSearching } from '@/store/slices/PetSlice'
 import { searchPets } from '@/services/petApi'
 import { useSearchParams } from 'next/navigation'
+import { fetchFeaturedPetsBuyer, type FeaturedPet } from '@/services/featuredPetService'
 // Using standard Lucide icons for UI states (assuming lucide-react is installed, if not, basic SVGs work)
-import { AlertCircle, RefreshCcw, Dog } from 'lucide-react'
+import { AlertCircle, RefreshCcw, Dog, Star } from 'lucide-react'
 
 const BuyerHome = () => {
     const dispatch = useAppDispatch();
     const { pets } = useAppSelector((state) => state.pet);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [featuredPets, setFeaturedPets] = useState<FeaturedPet[]>([]);
     const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
     const searchParams = useSearchParams();
 
@@ -35,6 +38,19 @@ const BuyerHome = () => {
         try {
             setLoading(true);
             setError(null);
+
+            // Fetch featured pets (always, not affected by filters)
+            if (!searchQuery && !category && !gender && !age && !minPrice && !maxPrice) {
+                try {
+                    const featured = await fetchFeaturedPetsBuyer();
+                    setFeaturedPets(featured);
+                } catch (err) {
+                    console.error('Error fetching featured pets:', err);
+                    // Don't show error for featured pets, just log it
+                }
+            } else {
+                setFeaturedPets([]);
+            }
 
             if (searchQuery) {
                 // Use search API when search query is present
@@ -170,61 +186,81 @@ const BuyerHome = () => {
                     </Suspense>
                 </div>
 
-                {/* 3. Grid Layout */}
-                {/* Improved Grid: 1 col mobile, 2 tablet/small laptop, 3 desktop */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
+                {/* Featured Pets Section */}
+                {!loading && featuredPets.length > 0 && (
+                    <section className="mb-16">
+                        <div className="flex items-center gap-2 mb-6">
+                            <Star className="h-6 w-6 text-amber-500 fill-amber-500" />
+                            <h2 className="text-2xl font-bold text-gray-900">Featured Pets</h2>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                            {featuredPets.map((pet) => (
+                                <FeaturedPetCard key={pet._id} pet={pet} />
+                            ))}
+                        </div>
+                    </section>
+                )}
 
-                    {loading ? (
-                        // 4. Enhanced Loading Skeletons
-                        // mimics the actual card shape (Image aspect ratio + text lines)
-                        Array.from({ length: 8 }).map((_, i) => (
-                            <div key={i} className="flex flex-col space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                                <div className="aspect-[4/3] w-full bg-slate-200 rounded-xl animate-pulse" />
-                                <div className="space-y-2 pt-2">
-                                    <div className="h-5 bg-slate-200 rounded w-3/4 animate-pulse" />
-                                    <div className="h-4 bg-slate-200 rounded w-1/2 animate-pulse" />
+                {/* All Pets Section */}
+                <section>
+                    <div className="flex items-center gap-2 mb-6">
+                        <Dog className="h-6 w-6 text-slate-600" />
+                        <h2 className="text-2xl font-bold text-gray-900">All Pets</h2>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+
+                        {loading ? (
+                            // 4. Enhanced Loading Skeletons
+                            // mimics the actual card shape (Image aspect ratio + text lines)
+                            Array.from({ length: 8 }).map((_, i) => (
+                                <div key={i} className="flex flex-col space-y-3 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                    <div className="aspect-[4/3] w-full bg-slate-200 rounded-xl animate-pulse" />
+                                    <div className="space-y-2 pt-2">
+                                        <div className="h-5 bg-slate-200 rounded w-3/4 animate-pulse" />
+                                        <div className="h-4 bg-slate-200 rounded w-1/2 animate-pulse" />
+                                    </div>
+                                    <div className="pt-2 flex justify-between items-center">
+                                        <div className="h-8 w-20 bg-slate-200 rounded-lg animate-pulse" />
+                                        <div className="h-8 w-8 bg-slate-200 rounded-full animate-pulse" />
+                                    </div>
                                 </div>
-                                <div className="pt-2 flex justify-between items-center">
-                                    <div className="h-8 w-20 bg-slate-200 rounded-lg animate-pulse" />
-                                    <div className="h-8 w-8 bg-slate-200 rounded-full animate-pulse" />
+                            ))
+                        ) : error ? (
+                            // 5. Modern Error State
+                            <div className="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-slate-300">
+                                <div className="h-16 w-16 bg-red-50 rounded-full flex items-center justify-center mb-4 text-red-500">
+                                    <AlertCircle size={32} />
                                 </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">Unable to load pets</h3>
+                                <p className="text-slate-500 mb-6 text-center max-w-md">{error}</p>
+                                <button
+                                    onClick={fetchPets}
+                                    className="inline-flex items-center px-6 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-all hover:shadow-lg active:scale-95"
+                                >
+                                    <RefreshCcw size={18} className="mr-2" />
+                                    Try Again
+                                </button>
                             </div>
-                        ))
-                    ) : error ? (
-                        // 5. Modern Error State
-                        <div className="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-slate-300">
-                            <div className="h-16 w-16 bg-red-50 rounded-full flex items-center justify-center mb-4 text-red-500">
-                                <AlertCircle size={32} />
+                        ) : pets && pets.length > 0 ? (
+                            // 6. Pet Cards
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            pets.map((pet: any, index: number) => (
+                                <div key={pet._id || index} className="transition-transform duration-300 hover:-translate-y-1">
+                                    <PetCard pet={pet} />
+                                </div>
+                            ))
+                        ) : (
+                            // 7. Modern Empty State
+                            <div className="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-slate-300">
+                                <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                                    <Dog size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-1">No pets found</h3>
+                                <p className="text-slate-500">Try adjusting your filters or check back later.</p>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Unable to load pets</h3>
-                            <p className="text-slate-500 mb-6 text-center max-w-md">{error}</p>
-                            <button
-                                onClick={fetchPets}
-                                className="inline-flex items-center px-6 py-3 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-all hover:shadow-lg active:scale-95"
-                            >
-                                <RefreshCcw size={18} className="mr-2" />
-                                Try Again
-                            </button>
-                        </div>
-                    ) : pets && pets.length > 0 ? (
-                        // 6. Pet Cards
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        pets.map((pet: any, index: number) => (
-                            <div key={pet._id || index} className="transition-transform duration-300 hover:-translate-y-1">
-                                <PetCard pet={pet} />
-                            </div>
-                        ))
-                    ) : (
-                        // 7. Modern Empty State
-                        <div className="col-span-full flex flex-col items-center justify-center py-24 bg-white rounded-3xl border border-dashed border-slate-300">
-                            <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-400">
-                                <Dog size={32} />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-1">No pets found</h3>
-                            <p className="text-slate-500">Try adjusting your filters or check back later.</p>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                </section>
             </main>
         </div>
     )
