@@ -128,14 +128,15 @@ function AdminDashboardContent() {
 
             const [statsResponse, activityResponse] = result;
 
-            if (statsResponse?.stats) {
+            if ('stats' in statsResponse && statsResponse.stats) {
                 setDashboardStats(statsResponse.stats);
             }
-            if (activityResponse?.activities) {
+            if ('activities' in activityResponse && activityResponse.activities) {
                 setRecentActivity(activityResponse.activities);
             }
 
-            if (statsResponse?.stats && activityResponse?.activities) {
+            if ('stats' in statsResponse && statsResponse.stats &&
+                'activities' in activityResponse && activityResponse.activities) {
                 saveCachedData(statsResponse.stats, activityResponse.activities);
             }
 
