@@ -119,6 +119,73 @@ export const searchPets = async (keyword?: string): Promise<ApiResponse<Pet[]>> 
 };
 
 // -------------------------
+// Get All Breed Names (log)
+// -------------------------
+export const getAllBreedNames = async (): Promise<string[]> => {
+    try {
+        const res = await api.get(`/v1/api/admin/breeds`);
+
+        const payload = res?.data;
+        // Try common shapes: {breeds: []} | {data: []} | []
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let collection: any = payload?.breeds ?? payload?.data ?? payload?.items ?? payload;
+
+        let names: string[] = [];
+        if (Array.isArray(collection)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            names = collection
+                .map((b: any) => b?.name ?? b?.breedName ?? (typeof b === 'string' ? b : undefined))
+                .filter((n): n is string => typeof n === 'string');
+        } else if (collection && typeof collection === 'object') {
+            // Fallback if nested arrays are under collection.breeds or collection.data
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const nested: any = collection.breeds ?? collection.data;
+            if (Array.isArray(nested)) {
+                names = nested
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    .map((b: any) => b?.name ?? b?.breedName ?? (typeof b === 'string' ? b : undefined))
+                    .filter((n): n is string => typeof n === 'string');
+            }
+        }
+
+        console.log("All breed names:", names);
+        return names;
+    } catch (error) {
+        console.error("Failed to fetch breed names:", error);
+        return [];
+    }
+};
+
+
+
+// -------------------------
+// Add New Pet Listing
+// -------------------------
+export const addPetListing = async (formData: FormData): Promise<ApiResponse<Pet>> => {
+    try {
+        const res = await api.post('/v1/api/seller/pet', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        return {
+            success: true,
+            message: res.data?.message || 'Pet listing created successfully',
+            data: res.data?.pet || res.data?.data || null,
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+        return {
+            success: false,
+            message: err?.response?.data?.message || 'Failed to create listing',
+            data: null,
+        };
+    }
+};
+
+// Note: call getAllBreedNames() from client components or effects when needed.
+// -------------------------
 // Get All Pets (Optional - for listing)
 // -------------------------
 // export const getAllPets = async (): Promise<ApiResponse<Pet[]>> => {

@@ -12,7 +12,8 @@ import {
     Trash2,
     MoreVertical,
     PackageCheck,
-    Store
+    Store,
+    Star
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
@@ -22,10 +23,23 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 import { getSellerpets } from '@/services/seller';
 import type { Pet } from '@/services/petApi';
 import { useAppSelector } from '@/store/hooks';
+import { requestFeaturedPet } from '@/services/featuredPetService';
 
 // const mockListings = [
 //     {
@@ -84,6 +98,9 @@ export default function ListingsManagementPage() {
     // State
     const [pets, setPets] = useState<Pet[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [showFeaturedDialog, setShowFeaturedDialog] = useState(false);
+    const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+    const [isRequestingFeatured, setIsRequestingFeatured] = useState(false);
     // Removed search and status filter logic
     const safePets = Array.isArray(pets) ? pets : [];
     // Fetch pets from API
@@ -104,6 +121,47 @@ export default function ListingsManagementPage() {
 
     // Removed filteredListings logic; will use safePets directly
 
+    // Handle featured request
+    const handleFeaturedRequest = async () => {
+        if (!selectedPetId) return;
+
+        setIsRequestingFeatured(true);
+        try {
+            await requestFeaturedPet(selectedPetId);
+            toast.success('Featured listing request submitted successfully!');
+            setShowFeaturedDialog(false);
+
+            // Refresh pet list
+            if (user) {
+                const petList = await getSellerpets();
+                setPets(Array.isArray(petList) ? petList : []);
+            }
+        } catch (error: any) {
+            console.error('Error requesting featured:', error);
+            const errorMessage = error?.response?.data?.message || 'Failed to request featured listing';
+            toast.error(errorMessage);
+        } finally {
+            setIsRequestingFeatured(false);
+            setSelectedPetId(null);
+        }
+    };
+
+    // Check if featured request option should be shown
+    const canRequestFeatured = (pet: Pet) => {
+        if (!pet.isVerified) return false;
+
+        const status = (pet as any).featuredRequest?.status;
+        return !status || status === 'rejected';
+    };
+
+    // Get featured badge text
+    const getFeaturedBadge = (pet: Pet) => {
+        const status = (pet as any).featuredRequest?.status;
+        if (status === 'pending') return 'Featured Request Pending';
+        if (status === 'approved') return '⭐ Featured';
+        return null;
+    };
+
 
     return (
         <div className="space-y-6">
@@ -114,7 +172,7 @@ export default function ListingsManagementPage() {
                     <p className="text-slate-500 mt-1">View and manage all your pet listings</p>
                 </div>
                 <Button asChild>
-                    <Link href="/seller/listings/new">
+                    <Link href="/seller/add-pet">
                         <Plus className="h-4 w-4 mr-2" />
                         Add New Listing
                     </Link>
@@ -198,12 +256,22 @@ export default function ListingsManagementPage() {
                                                 <span className="font-semibold text-slate-900">₹{pet.price.toLocaleString()}</span>
                                             </td>
                                             <td className="py-4 px-6">
-                                                <Badge
-                                                    variant={pet.isVerified ? 'default' : 'secondary'}
-                                                    className={pet.isVerified ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'}
-                                                >
-                                                    {pet.isVerified ? 'Active' : 'Pending Review'}
-                                                </Badge>
+                                                <div className="flex flex-col gap-1">
+                                                    <Badge
+                                                        variant={pet.isVerified ? 'default' : 'secondary'}
+                                                        className={pet.isVerified ? 'bg-green-100 text-green-800 hover:bg-green-100' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'}
+                                                    >
+                                                        {pet.isVerified ? 'Active' : 'Pending Review'}
+                                                    </Badge>
+                                                    {getFeaturedBadge(pet) && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50"
+                                                        >
+                                                            {getFeaturedBadge(pet)}
+                                                        </Badge>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-3 text-sm text-slate-600">
@@ -238,6 +306,20 @@ export default function ListingsManagementPage() {
                                                             <Edit className="h-4 w-4 mr-2" />
                                                             Edit Listing
                                                         </DropdownMenuItem>
+                                                        {canRequestFeatured(pet) && (
+                                                            <>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    onClick={() => {
+                                                                        setSelectedPetId(pet._id);
+                                                                        setShowFeaturedDialog(true);
+                                                                    }}
+                                                                >
+                                                                    <Star className="h-4 w-4 mr-2" />
+                                                                    Request Featured ⭐
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
                                                         {pet.isVerified && (
                                                             <DropdownMenuItem>
                                                                 <PackageCheck className="h-4 w-4 mr-2" />
@@ -337,6 +419,29 @@ export default function ListingsManagementPage() {
                     </div>
                 </>
             )}
+
+            {/* Featured Request Confirmation Dialog */}
+            <AlertDialog open={showFeaturedDialog} onOpenChange={setShowFeaturedDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Request Featured Listing</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Submit a request to feature this pet listing. Featured listings get higher visibility and appear at the top of search results.
+                            <br /><br />
+                            Your request will be reviewed by our admin team.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isRequestingFeatured}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleFeaturedRequest}
+                            disabled={isRequestingFeatured}
+                        >
+                            {isRequestingFeatured ? 'Submitting...' : 'Submit Request'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 } 

@@ -59,7 +59,6 @@ export default function SellerRootLayout({ children }: { children: React.ReactNo
             toast.success('Logged out successfully');
             router.push('/login');
         } catch (error) {
-            console.error('Logout error:', error);
             toast.error('Failed to logout');
         } finally {
             setIsLoggingOut(false);
