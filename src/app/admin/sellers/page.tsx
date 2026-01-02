@@ -183,23 +183,23 @@ function SellerVerificationContent() {
                                     </TableHeader>
                                     <TableBody>
                                         {pendingRequests.map((seller) => (
-                                            <TableRow key={seller.id}>
-                                                <TableCell className="font-medium">{seller.sellerName}</TableCell>
-                                                <TableCell>{seller.businessName || 'N/A'}</TableCell>
+                                            <TableRow key={seller._id}>
+                                                <TableCell className="font-medium">{seller.userId?.name || 'N/A'}</TableCell>
+                                                <TableCell>{seller.brandName || 'N/A'}</TableCell>
                                                 <TableCell>
                                                     <div className="space-y-1">
                                                         <div className="flex items-center gap-1 text-sm">
                                                             <Mail className="w-3 h-3" />
-                                                            {seller.email}
+                                                            {seller.userId?.email || 'N/A'}
                                                         </div>
                                                         <div className="flex items-center gap-1 text-sm">
                                                             <Phone className="w-3 h-3" />
-                                                            {seller.phone}
+                                                            {seller.userId?.phoneNumber || seller.whatsappNumber || 'N/A'}
                                                         </div>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {new Date(seller.submittedOn).toLocaleDateString('en-US', {
+                                                    {new Date(seller.createdAt).toLocaleDateString('en-US', {
                                                         month: 'short',
                                                         day: 'numeric',
                                                         year: 'numeric'
@@ -212,7 +212,7 @@ function SellerVerificationContent() {
                                                             size="sm"
                                                             variant="outline"
                                                             className="text-green-600 hover:bg-green-50"
-                                                            onClick={() => handleApprove(seller.id)}
+                                                            onClick={() => handleApprove(seller._id)}
                                                             disabled={loading}
                                                         >
                                                             <CheckCircle className="w-4 h-4 mr-1" />
@@ -222,7 +222,7 @@ function SellerVerificationContent() {
                                                             size="sm"
                                                             variant="outline"
                                                             className="text-red-600 hover:bg-red-50"
-                                                            onClick={() => handleReject(seller.id)}
+                                                            onClick={() => handleReject(seller._id)}
                                                             disabled={loading}
                                                         >
                                                             <XCircle className="w-4 h-4 mr-1" />
@@ -263,11 +263,11 @@ function SellerVerificationContent() {
                                     </TableHeader>
                                     <TableBody>
                                         {verifiedSellers.map((seller) => (
-                                            <TableRow key={seller.id}>
-                                                <TableCell className="font-medium">{seller.sellerName}</TableCell>
-                                                <TableCell>{seller.businessName || 'N/A'}</TableCell>
-                                                <TableCell>{seller.email}</TableCell>
-                                                <TableCell>{seller.phone}</TableCell>
+                                            <TableRow key={seller._id}>
+                                                <TableCell className="font-medium">{seller.userId?.name || 'N/A'}</TableCell>
+                                                <TableCell>{seller.brandName || 'N/A'}</TableCell>
+                                                <TableCell>{seller.userId?.email || 'N/A'}</TableCell>
+                                                <TableCell>{seller.userId?.phoneNumber || seller.whatsappNumber || 'N/A'}</TableCell>
                                                 <TableCell>{getStatusBadge(seller.status)}</TableCell>
                                             </TableRow>
                                         ))}

@@ -108,7 +108,10 @@ function SpeciesBreedsContent() {
     const handleAddSpecies = async () => {
         if (newSpeciesName.trim()) {
             try {
-                const response = await createSpecies(newSpeciesName.trim());
+                const response = await createSpecies({
+                    speciesName: newSpeciesName.trim(),
+                    category: 'Mammal', // Default category
+                });
                 setSpecies([...species, response.species]);
                 setNewSpeciesName('');
                 setShowAddSpeciesDialog(false);
@@ -278,7 +281,7 @@ function SpeciesBreedsContent() {
                                                 onClick={() => setDeleteDialog({
                                                     open: true,
                                                     type: 'species',
-                                                    id: item.id,
+                                                    id: item.id || item._id || null,
                                                     name: item.name,
                                                 })}
                                             >
@@ -414,7 +417,7 @@ function SpeciesBreedsContent() {
                                                                 onClick={() => setDeleteDialog({
                                                                     open: true,
                                                                     type: 'breed',
-                                                                    id: breed.id,
+                                                                    id: breed.id || breed._id || null,
                                                                     name: breed.name,
                                                                 })}
                                                             >

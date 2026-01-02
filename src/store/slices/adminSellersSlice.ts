@@ -95,14 +95,14 @@ const adminSellersSlice = createSlice({
                 const { sellerRequestId, status } = action.payload;
 
                 // Update pendingRequests
-                state.pendingRequests = state.pendingRequests.filter(r => r.id !== sellerRequestId);
-                const seller = state.pendingRequests.find(r => r.id === sellerRequestId);
+                state.pendingRequests = state.pendingRequests.filter(r => r._id !== sellerRequestId);
+                const seller = state.pendingRequests.find(r => r._id === sellerRequestId);
                 if (seller && status === 'verified') {
                     state.verifiedSellers.push({ ...seller, status });
                 }
 
                 // Update allVerifications array with new status
-                const verificationIndex = state.allVerifications.findIndex(v => v.id === sellerRequestId);
+                const verificationIndex = state.allVerifications.findIndex(v => v._id === sellerRequestId);
                 if (verificationIndex !== -1) {
                     state.allVerifications[verificationIndex] = {
                         ...state.allVerifications[verificationIndex],

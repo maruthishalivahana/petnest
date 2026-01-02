@@ -1,5 +1,7 @@
 // Example React/TypeScript Frontend Integration for Admin Dashboard
 
+import React from 'react';
+
 // ============= TYPE DEFINITIONS =============
 interface SellerVerificationStats {
     pending: number;

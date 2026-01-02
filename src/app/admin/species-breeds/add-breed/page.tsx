@@ -39,7 +39,7 @@ export default function AddBreedPage() {
         description: '',
     });
 
-    const [errors, setErrors] = useState<{ name?: string; speciesId?: string }>({});
+    const [errors, setErrors] = useState<Partial<Record<keyof CreateBreedPayload, string>>>({});
 
     // Load species on mount
     useEffect(() => {
@@ -59,7 +59,7 @@ export default function AddBreedPage() {
         }
     };
 
-    const handleInputChange = (field: keyof CreateBreedPayload, value: string) => {
+    const handleInputChange = (field: keyof CreateBreedPayload, value: string | boolean) => {
         setFormData(prev => ({ ...prev, [field]: value }));
 
         // Clear error when user starts typing
@@ -69,7 +69,7 @@ export default function AddBreedPage() {
     };
 
     const validateForm = (): boolean => {
-        const newErrors: { name?: string; speciesId?: string } = {};
+        const newErrors: Partial<Record<keyof CreateBreedPayload, string>> = {};
 
         if (!formData.name.trim()) {
             newErrors.name = 'Breed name is required';
