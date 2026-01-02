@@ -83,7 +83,6 @@ export default function SellerProfilePage() {
                 setSellerDetails(data);
                 setError(null);
             } catch (err) {
-                console.error('Failed to fetch seller details:', err);
                 setError('Failed to load seller details');
             } finally {
                 setIsLoading(false);

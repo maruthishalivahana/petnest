@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card } from '@/components/ui/card';
@@ -19,23 +20,47 @@ import {
 import { petListingSchema, PetListingFormData } from '@/Validations/pet.validations';
 import { Upload, Loader2, PawPrint, X } from 'lucide-react';
 import { toast } from 'sonner';
-
-const BREED_OPTIONS = [
-    'Indian Dog',
-    'Labrador',
-    'German Shepherd',
-    'Golden Retriever',
-    'Bulldog',
-    'Beagle',
-    'Poodle',
-    'Rottweiler',
-    'Husky',
-    'Pomeranian',
-];
+import { getAllBreedNames, addPetListing } from '@/services/petApi';
+import { getCurrentSellerDetails } from '@/services/seller';
 
 export default function AddPetPage() {
+    const router = useRouter();
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [breedNames, setBreedNames] = useState<string[]>([]);
+    const [isLoadingBreeds, setIsLoadingBreeds] = useState(true);
+    const [sellerVerified, setSellerVerified] = useState<boolean | null>(null);
+    const [checkingStatus, setCheckingStatus] = useState(true);
+
+    useEffect(() => {
+        // Check seller verification status
+        const checkSellerStatus = async () => {
+            try {
+                const sellerData = await getCurrentSellerDetails();
+                console.log('Seller details:', sellerData);
+
+                const status = sellerData?.status;
+                console.log('Seller status:', status, 'Is verified:', status === 'verified');
+
+                setSellerVerified(status === 'verified');
+            } catch (error) {
+                console.error('Error checking seller status:', error);
+                // If no seller profile exists, they're not verified
+                setSellerVerified(false);
+            } finally {
+                setCheckingStatus(false);
+            }
+        };
+
+        checkSellerStatus();
+
+        getAllBreedNames().then((names) => {
+            console.log('All breed names:', names);
+            setBreedNames(names);
+            setIsLoadingBreeds(false);
+        });
+    }, []);
 
     const {
         register,
@@ -44,6 +69,7 @@ export default function AddPetPage() {
         formState: { errors },
     } = useForm<PetListingFormData>({
         resolver: zodResolver(petListingSchema) as Resolver<PetListingFormData>,
+        mode: 'onChange',
         defaultValues: {
             currency: 'INR',
         },
@@ -52,15 +78,34 @@ export default function AddPetPage() {
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files) {
-            const fileArray = Array.from(files);
-            setSelectedImages(fileArray);
-            setValue('images', files, { shouldValidate: true });
+            const newFileArray = Array.from(files);
+            // Append new files to existing ones
+            const updatedImages = [...selectedImages, ...newFileArray];
+            setSelectedImages(updatedImages);
+
+            // Create preview URLs for new images
+            const newPreviews = newFileArray.map(file => URL.createObjectURL(file));
+            setImagePreviews([...imagePreviews, ...newPreviews]);
+
+            // Update form value with all images
+            const dataTransfer = new DataTransfer();
+            updatedImages.forEach((file) => dataTransfer.items.add(file));
+            setValue('images', dataTransfer.files, { shouldValidate: true });
         }
+
+        // Reset input value to allow selecting the same file again
+        e.target.value = '';
     };
 
     const removeImage = (index: number) => {
         const newImages = selectedImages.filter((_, i) => i !== index);
+        const newPreviews = imagePreviews.filter((_, i) => i !== index);
+
+        // Revoke the URL to free memory
+        URL.revokeObjectURL(imagePreviews[index]);
+
         setSelectedImages(newImages);
+        setImagePreviews(newPreviews);
 
         const dataTransfer = new DataTransfer();
         newImages.forEach((file) => dataTransfer.items.add(file));
@@ -68,6 +113,22 @@ export default function AddPetPage() {
     };
 
     const onSubmit = async (data: PetListingFormData) => {
+        // Check if seller is verified
+        if (sellerVerified === false) {
+            toast.error('Your seller account is not verified yet. Please wait for admin approval before adding pets.', {
+                duration: 5000,
+                description: 'You can check your verification status in the Verification section.'
+            });
+            return;
+        }
+
+        if (sellerVerified === null) {
+            toast.error('Unable to verify seller status. Please try again.', {
+                duration: 5000
+            });
+            return;
+        }
+
         try {
             setIsSubmitting(true);
 
@@ -90,8 +151,18 @@ export default function AddPetPage() {
                 formData.append('images', file);
             });
 
-            console.log('Form Data Ready:', Object.fromEntries(formData));
-            toast.success('Pet listing created successfully!');
+            // Submit to backend
+            const response = await addPetListing(formData);
+
+            if (response.success) {
+                toast.success(response.message);
+                // Redirect to listings page
+                setTimeout(() => {
+                    router.push('/seller/listings');
+                }, 1000);
+            } else {
+                toast.error(response.message);
+            }
 
         } catch (error) {
             console.error('Error submitting form:', error);
@@ -100,6 +171,15 @@ export default function AddPetPage() {
             setIsSubmitting(false);
         }
     };
+
+    // Show loading while checking status
+    if (checkingStatus) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8">
@@ -116,6 +196,14 @@ export default function AddPetPage() {
                     <p className="text-slate-600">
                         Fill in the details below to list your pet for sale
                     </p>
+                    {sellerVerified === false && (
+                        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                            <p className="text-sm text-amber-800">
+                                <strong>⚠️ Verification Required:</strong> Your seller account is pending verification.
+                                You won't be able to publish listings until approved by admin.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)}>
@@ -147,16 +235,23 @@ export default function AddPetPage() {
                                         </Label>
                                         <Select
                                             onValueChange={(value) => setValue('breedName', value, { shouldValidate: true })}
+                                            disabled={isLoadingBreeds}
                                         >
                                             <SelectTrigger className={errors.breedName ? 'border-red-500' : ''}>
-                                                <SelectValue placeholder="Select breed" />
+                                                <SelectValue placeholder={isLoadingBreeds ? 'Loading breeds...' : 'Select breed'} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {BREED_OPTIONS.map((breed) => (
-                                                    <SelectItem key={breed} value={breed}>
-                                                        {breed}
-                                                    </SelectItem>
-                                                ))}
+                                                {breedNames.length > 0 ? (
+                                                    breedNames.map((breed) => (
+                                                        <SelectItem key={breed} value={breed}>
+                                                            {breed}
+                                                        </SelectItem>
+                                                    ))
+                                                ) : (
+                                                    <div className="p-2 text-sm text-slate-500">
+                                                        {isLoadingBreeds ? 'Loading breeds...' : 'No breeds available'}
+                                                    </div>
+                                                )}
                                             </SelectContent>
                                         </Select>
                                         {errors.breedName && (
@@ -169,14 +264,14 @@ export default function AddPetPage() {
                                             Gender <span className="text-red-500">*</span>
                                         </Label>
                                         <Select
-                                            onValueChange={(value) => setValue('gender', value as 'Male' | 'Female', { shouldValidate: true })}
+                                            onValueChange={(value) => setValue('gender', value as 'male' | 'female', { shouldValidate: true })}
                                         >
                                             <SelectTrigger className={errors.gender ? 'border-red-500' : ''}>
                                                 <SelectValue placeholder="Select gender" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="Male">Male</SelectItem>
-                                                <SelectItem value="Female">Female</SelectItem>
+                                                <SelectItem value="male">male</SelectItem>
+                                                <SelectItem value="female">female</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         {errors.gender && (
@@ -356,23 +451,31 @@ export default function AddPetPage() {
                                     </div>
 
                                     {selectedImages.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                            {selectedImages.map((file, index) => (
-                                                <Badge
-                                                    key={index}
-                                                    variant="secondary"
-                                                    className="px-3 py-2 text-sm flex items-center gap-2"
-                                                >
-                                                    {file.name}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeImage(index)}
-                                                        className="hover:text-red-600 transition-colors"
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </button>
-                                                </Badge>
-                                            ))}
+                                        <div>
+                                            <p className="text-sm text-slate-600 mb-3">
+                                                {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected
+                                            </p>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                                {selectedImages.map((file, index) => (
+                                                    <div key={index} className="relative group">
+                                                        <div className="aspect-square rounded-lg overflow-hidden border-2 border-slate-200">
+                                                            <img
+                                                                src={imagePreviews[index]}
+                                                                alt={`Preview ${index + 1}`}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeImage(index)}
+                                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-md"
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </button>
+                                                        <p className="text-xs text-slate-500 mt-1 truncate">{file.name}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
 

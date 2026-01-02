@@ -57,12 +57,24 @@ export default function SignUp() {
         try {
             setIsLoading(true)
             SetEmail(values.email);
-            console.log("Form values being sent:", values);
 
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080"
+            const apiUrl = `${baseUrl}/v1/api/auth/signup`;
+
+            console.log("Signup Request Details:", {
+                url: apiUrl,
+                baseUrl,
+                values: {
+                    name: values.name,
+                    email: values.email,
+                    role: values.role,
+                    isVerified: values.isVerified,
+                    passwordLength: values.password.length
+                }
+            });
 
             const res = await axios.post(
-                `${baseUrl}/v1/api/auth/signup`,
+                apiUrl,
                 values,
                 {
                     headers: {
@@ -78,15 +90,24 @@ export default function SignUp() {
 
         } catch (error) {
             if (axios.isAxiosError(error)) {
-                console.error("Signup failed:", {
+                console.error("Signup failed - Axios Error:", {
                     status: error.response?.status,
+                    statusText: error.response?.statusText,
                     data: error.response?.data,
                     message: error.message,
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    requestData: error.config?.data,
                 });
-                toast.error(error.response?.data?.message || "Signup failed. Please try again.");
+
+                const errorMessage = error.response?.data?.message
+                    || error.response?.data?.error
+                    || `Signup failed: ${error.response?.statusText || error.message}`;
+
+                toast.error(errorMessage);
             } else {
-                console.error("Signup failed:", error);
-                toast.error("An unexpected error occurred.");
+                console.error("Signup failed - Unknown Error:", error);
+                toast.error("An unexpected error occurred. Please check your connection and try again.");
             }
             setIsLoading(false);
         }
