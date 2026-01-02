@@ -165,10 +165,12 @@ function PetVerificationContent() {
                         </TableHeader>
                         <TableBody>
                             {unverifiedPets.map((pet) => (
-                                <TableRow key={pet.id}>
-                                    <TableCell className="font-medium">{pet.petName}</TableCell>
-                                    <TableCell>{pet.species}</TableCell>
-                                    <TableCell>{pet.breed}</TableCell>
+                                <TableRow key={pet._id || pet.id}>
+                                    <TableCell className="font-medium">{pet.name}</TableCell>
+                                    <TableCell>
+                                        {typeof pet.category === 'string' ? pet.category : pet.category?.name || 'N/A'}
+                                    </TableCell>
+                                    <TableCell>{pet.breedName || pet.breedname || (typeof pet.breedId === 'object' ? pet.breedId?.name : 'N/A')}</TableCell>
                                     <TableCell>{pet.age}</TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-1">
@@ -178,11 +180,11 @@ function PetVerificationContent() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="text-sm">
-                                            <div>{pet.ownerName || 'N/A'}</div>
-                                            <div className="text-gray-500">{pet.ownerEmail || 'N/A'}</div>
+                                            <div>{pet.sellerId?.userId?.name || pet.sellerId?.brandName || 'N/A'}</div>
+                                            <div className="text-gray-500">{pet.sellerId?.userId?.email || 'N/A'}</div>
                                         </div>
                                     </TableCell>
-                                    <TableCell>{getStatusBadge(pet.status)}</TableCell>
+                                    <TableCell>{getStatusBadge(pet.status || STATUS.NOT_VERIFIED)}</TableCell>
                                     <TableCell className="text-right">
                                         {pet.status === STATUS.NOT_VERIFIED && (
                                             <div className="flex justify-end gap-2">
@@ -190,7 +192,7 @@ function PetVerificationContent() {
                                                     size="sm"
                                                     variant="outline"
                                                     className="text-green-600 hover:bg-green-50"
-                                                    onClick={() => handleApprove(pet.id)}
+                                                    onClick={() => handleApprove(pet._id || pet.id || '')}
                                                     disabled={loading}
                                                 >
                                                     <CheckCircle className="w-4 h-4 mr-1" />
@@ -200,7 +202,7 @@ function PetVerificationContent() {
                                                     size="sm"
                                                     variant="outline"
                                                     className="text-red-600 hover:bg-red-50"
-                                                    onClick={() => handleReject(pet.id)}
+                                                    onClick={() => handleReject(pet._id || pet.id || '')}
                                                     disabled={loading}
                                                 >
                                                     <XCircle className="w-4 h-4 mr-1" />

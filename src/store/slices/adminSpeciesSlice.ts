@@ -44,7 +44,10 @@ export const fetchAllBreeds = createAsyncThunk(
 export const createSpeciesThunk = createAsyncThunk(
     'adminSpecies/createSpecies',
     async (name: string) => {
-        const response = await createSpecies(name);
+        const response = await createSpecies({
+            speciesName: name,
+            category: 'Mammal', // Default category
+        });
         return response.species;
     }
 );
@@ -52,7 +55,12 @@ export const createSpeciesThunk = createAsyncThunk(
 export const createBreedThunk = createAsyncThunk(
     'adminSpecies/createBreed',
     async ({ name, speciesId }: { name: string; speciesId: string }) => {
-        const response = await createBreed(name, speciesId);
+        const response = await createBreed(
+            name,
+            speciesId,
+            'Mammal', // Default category
+            'Allowed' // Default legal status
+        );
         return response.breed;
     }
 );
