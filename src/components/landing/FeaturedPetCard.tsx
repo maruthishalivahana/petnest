@@ -3,6 +3,7 @@
 import { MapPin, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { WishlistButton } from '@/components/wishlist/WishlistButton';
 
 interface FeaturedPet {
     _id: string;
@@ -74,6 +75,13 @@ export function FeaturedPetCard({ pet }: FeaturedPetCardProps) {
                 <Star className="h-3.5 w-3.5 fill-white text-white" />
                 <span className="text-xs font-bold text-white">Featured</span>
             </div>
+
+            {/* Wishlist Button */}
+            {_id && (
+                <div className="absolute top-3 right-3 z-20 rounded-full bg-white/90 p-1.5 shadow-lg transition-transform active:scale-95 backdrop-blur-sm">
+                    <WishlistButton petId={_id} pet={pet as any} />
+                </div>
+            )}
 
             {/* Image */}
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">

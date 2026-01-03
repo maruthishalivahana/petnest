@@ -105,7 +105,9 @@ export function WishlistButton({
         <Heart
             className={cn(
                 'w-5 h-5 transition-all duration-200',
-                isWishlisted ? 'fill-red-500 text-red-500' : 'text-muted-foreground hover:text-red-400',
+                isWishlisted
+                    ? 'fill-red-500 text-red-500 stroke-red-500'
+                    : 'fill-none text-muted-foreground hover:text-red-400 hover:fill-red-100',
                 iconClassName
             )}
         />
