@@ -13,22 +13,31 @@ import { checkWishlist } from '@/services/wishlistApi';
 export function useWishlistStatus(petId: string) {
     const wishlistedIds = useAppSelector((state) => state.wishlist.wishlistedIds);
     const userId = useAppSelector((state) => state.auth.user?.id);
+    const wishlistLastFetched = useAppSelector((state) => state.wishlist.lastFetched);
 
-    const [isWishlisted, setIsWishlisted] = useState(() => {
-        // Initial state from Redux (may be stale)
-        return wishlistedIds.includes(petId);
-    });
+    // Always trust Redux state as source of truth
+    const isWishlisted = wishlistedIds.includes(petId);
 
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [hasVerified, setHasVerified] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
 
-        const fetchWishlistStatus = async () => {
-            if (!userId) {
-                // User not logged in
-                setIsWishlisted(false);
+        const verifyWishlistStatus = async () => {
+            // Don't verify if:
+            // - No user is logged in
+            // - Wishlist was recently fetched (within last 30 seconds)
+            // - Already verified this pet
+            if (!userId || hasVerified) {
+                setIsLoading(false);
+                return;
+            }
+
+            // If wishlist was recently fetched, trust Redux state
+            if (wishlistLastFetched && Date.now() - wishlistLastFetched < 30000) {
+                setHasVerified(true);
                 setIsLoading(false);
                 return;
             }
@@ -37,19 +46,21 @@ export function useWishlistStatus(petId: string) {
                 setIsLoading(true);
                 setError(null);
 
-                // Fetch real status from backend
+                // Only verify with backend if Redux state might be stale
                 const backendStatus = await checkWishlist(petId);
 
                 if (isMounted) {
-                    setIsWishlisted(backendStatus);
+                    setHasVerified(true);
+                    // Log mismatch but trust Redux for display
+                    if (backendStatus !== isWishlisted) {
+                        console.warn(`Wishlist mismatch for pet ${petId}. Backend: ${backendStatus}, Redux: ${isWishlisted}`);
+                    }
                 }
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (err: any) {
-                console.error('Failed to check wishlist status:', err);
+                console.error('Failed to verify wishlist status:', err);
                 if (isMounted) {
-                    setError(err.message || 'Failed to check wishlist');
-                    // Fallback to Redux state if backend fails
-                    setIsWishlisted(wishlistedIds.includes(petId));
+                    setError(err.message || 'Failed to verify wishlist');
                 }
             } finally {
                 if (isMounted) {
@@ -58,22 +69,18 @@ export function useWishlistStatus(petId: string) {
             }
         };
 
-        fetchWishlistStatus();
+        verifyWishlistStatus();
 
         return () => {
             isMounted = false;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [petId, userId]); // Re-fetch if petId or user changes
+    }, [petId, userId, wishlistLastFetched]);
 
-    // Sync with Redux updates (optimistic updates)
+    // Reset verification when wishlistedIds change (user toggled wishlist)
     useEffect(() => {
-        const reduxStatus = wishlistedIds.includes(petId);
-        // Only update if not loading (to avoid overriding backend truth)
-        if (!isLoading) {
-            setIsWishlisted(reduxStatus);
-        }
-    }, [wishlistedIds, petId, isLoading]);
+        setHasVerified(false);
+    }, [wishlistedIds]);
 
     return {
         isWishlisted,
