@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import Image from "next/image";
 
-import { PawPrint, ShieldCheck, MessageCircle, CheckCircle2, User } from "lucide-react";
+import { PawPrint, ShieldCheck, MessageCircle, CheckCircle2, User, Megaphone } from "lucide-react";
 
 import { motion } from "framer-motion";
 
@@ -183,6 +183,12 @@ export default function ComingSoon() {
                             Sign Up
                         </Button>
                     </Link>
+                    <Link href="/request-ad">
+                        <Button variant="outline" size="sm" className="hidden lg:flex items-center gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                            <Megaphone className="w-4 h-4" />
+                            Advertise
+                        </Button>
+                    </Link>
                 </div>
             </nav>
 
@@ -282,6 +288,21 @@ export default function ComingSoon() {
                         <div className="text-xs text-muted-foreground">
                             <strong className="text-foreground">{count !== null ? `${count}+` : '400+'}</strong> people waiting
                         </div>
+                    </motion.div>
+
+                    {/* Advertise with Us Button */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6 }}
+                        className="pt-4"
+                    >
+                        <Link href="/request-ad">
+                            <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground shadow-md hover:shadow-lg transition-all">
+                                <Megaphone className="w-4 h-4 mr-2" />
+                                Advertise with PetNest
+                            </Button>
+                        </Link>
                     </motion.div>
                 </div>
 

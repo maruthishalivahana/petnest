@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ChevronRight, Sparkles } from "lucide-react";
+import { ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import {
     Carousel,
     CarouselContent,
@@ -12,43 +12,82 @@ import {
     type CarouselApi,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
+import { fetchHomepageBanners, type Advertisement } from "@/services/advertisementApi";
 
-const ads = [
+// Fallback ads when no ads are available from backend
+const fallbackAds = [
     {
-        id: 1,
+        id: "fallback-1",
         image: "https://images.unsplash.com/photo-1600077106724-946750eeaf3c?w=1920&q=80",
-        title: "Premium Pet Food",
-        subtitle: "Healthy • Organic • Trusted by 10k+ Pet Parents",
-        badge: "Best Seller",
-        button: "Shop Now",
-        link: "https://example.com",
+        title: "Welcome to PetNest",
+        subtitle: "Find Your Perfect Pet Companion Today",
+        badge: "Featured",
+        button: "Explore Pets",
+        link: "#",
         gradient: "from-orange-600/80 via-orange-500/60 to-transparent",
     },
-    {
-        id: 2,
-        image: "https://images.unsplash.com/photo-1548681528-6a5c45b66b42?w=1920&q=80",
-        title: "Verified VetCare",
-        subtitle: "Instant Online Consultations with Trusted Doctors",
-        badge: "24/7 Available",
-        button: "Book Now",
-        link: "https://example.com",
-        gradient: "from-blue-600/80 via-blue-500/60 to-transparent",
-    },
-    {
-        id: 3,
-        image: "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=1920&q=80",
-        title: "Pet Accessories Sale",
-        subtitle: "Up to 50% OFF — Limited Time",
-        badge: "Hot Deal",
-        button: "Explore",
-        link: "https://example.com",
-        gradient: "from-purple-600/80 via-purple-500/60 to-transparent",
-    },
 ];
+
+// Gradient variations for dynamic ads
+const gradients = [
+    "from-orange-600/80 via-orange-500/60 to-transparent",
+    "from-blue-600/80 via-blue-500/60 to-transparent",
+    "from-purple-600/80 via-purple-500/60 to-transparent",
+    "from-green-600/80 via-green-500/60 to-transparent",
+    "from-pink-600/80 via-pink-500/60 to-transparent",
+];
+
+interface AdDisplay {
+    id: string;
+    image: string;
+    title: string;
+    subtitle: string;
+    badge: string;
+    button: string;
+    link: string;
+    gradient: string;
+}
 
 export default function AdBanner() {
     const [api, setApi] = useState<CarouselApi>();
     const [current, setCurrent] = useState(0);
+    const [ads, setAds] = useState<AdDisplay[]>(fallbackAds);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch advertisements from backend
+    useEffect(() => {
+        const loadAdvertisements = async () => {
+            try {
+                setLoading(true);
+                const advertisements = await fetchHomepageBanners();
+
+                if (advertisements && advertisements.length > 0) {
+                    // Transform backend ads to display format
+                    const transformedAds: AdDisplay[] = advertisements.map((ad, index) => ({
+                        id: ad._id,
+                        image: ad.mediaUrl,
+                        title: ad.brandName,
+                        subtitle: ad.message,
+                        badge: "Featured",
+                        button: "Learn More",
+                        link: ad.mediaUrl, // or a custom link if you have one
+                        gradient: gradients[index % gradients.length],
+                    }));
+                    setAds(transformedAds);
+                } else {
+                    // Use fallback ads if no approved ads available
+                    setAds(fallbackAds);
+                }
+            } catch (error) {
+                console.error("Failed to load advertisements:", error);
+                setAds(fallbackAds);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadAdvertisements();
+    }, []);
 
     useEffect(() => {
         if (!api) return;
@@ -59,6 +98,18 @@ export default function AdBanner() {
             setCurrent(api.selectedScrollSnap());
         });
     }, [api]);
+
+    // Show loading state
+    if (loading) {
+        return (
+            <div className="w-full h-[280px] sm:h-[320px] md:h-[400px] lg:h-[450px] bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-gray-600 dark:text-gray-400" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Loading advertisements...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full">
