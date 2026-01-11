@@ -13,6 +13,9 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { cn } from '@/lib/utils'; // Assuming you have a cn utility
+import AdDetail from '@/components/landing/AdDetail';
+import AdMobileSticky from '@/components/landing/AdMobileSticky';
+import BuyerFooter from '@/components/landing/BuyerFooter';
 import {
     ArrowLeft,
     MapPin,
@@ -329,6 +332,9 @@ export default function PetDetailsPage() {
                             )}
                         </div>
 
+                        {/* Advertisement Below Description */}
+                        <AdDetail />
+
                         <Separator />
 
                         {/* Health Accordion / Section */}
@@ -409,6 +415,12 @@ export default function PetDetailsPage() {
                     </Button>
                 </div>
             </div>
+
+            {/* Mobile Sticky Advertisement */}
+            <AdMobileSticky />
+
+            {/* Main Footer */}
+            <BuyerFooter />
         </div>
     );
 }

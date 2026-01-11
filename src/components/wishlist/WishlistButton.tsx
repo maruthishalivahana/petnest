@@ -1,7 +1,7 @@
 'use client';
 
 import { Heart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useAppDispatch } from '@/store/hooks';
 import { addWishlistItem, removeWishlistItem } from '@/store/slices/wishlistSlice';
@@ -39,6 +39,11 @@ export function WishlistButton({
     // Use backend status as source of truth
     const isWishlisted = backendIsWishlisted;
     const loading = statusLoading || isUpdating;
+
+    // Debug log
+    useEffect(() => {
+        console.log(`❤️ [WishlistButton] Pet ${petId}:`, { isWishlisted, loading });
+    }, [petId, isWishlisted, loading]);
 
     const handleToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();

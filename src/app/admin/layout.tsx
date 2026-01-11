@@ -19,9 +19,11 @@ import {
     Menu,
     X,
     ChevronRight,
-    Star
+    Star,
+    Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Toaster } from '@/components/ui/toaster';
 
 interface NavItem {
     title: string;
@@ -54,10 +56,14 @@ const navigation: NavItem[] = [
         badge: '8',
     },
     {
+        title: 'Add Advertisement',
+        href: '/admin/advertisements/create',
+        icon: Plus,
+    },
+    {
         title: 'Advertisements',
         href: '/admin/advertisements',
         icon: Megaphone,
-        badge: '5',
     },
     {
         title: 'Featured Requests',
@@ -235,6 +241,7 @@ export default function AdminLayout({
                     </div>
                 </main>
             </div>
+            <Toaster />
         </div>
     );
 }

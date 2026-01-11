@@ -81,7 +81,25 @@ function AdvertisementManagementContent() {
     };
 
     // Status badge helper
-    const getStatusBadge = (status: string) => {
+    const getStatusBadge = (isApproved: boolean) => {
+        if (isApproved) {
+            return (
+                <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Approved
+                </Badge>
+            );
+        }
+        return (
+            <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
+                <Clock className="w-3 h-3 mr-1" />
+                Pending
+            </Badge>
+        );
+    };
+
+    // Legacy status badge helper (kept for compatibility)
+    const getStatusBadgeOld = (status: string) => {
         const badges = {
             [STATUS.PENDING]: (
                 <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
@@ -220,31 +238,26 @@ function AdvertisementManagementContent() {
                                 </TableHeader>
                                 <TableBody>
                                     {allAdvertisements.map((ad) => (
-                                        <TableRow key={ad.id}>
-                                            <TableCell className="font-medium">{ad.title}</TableCell>
-                                            <TableCell>{ad.advertiser || 'N/A'}</TableCell>
+                                        <TableRow key={ad._id}>
+                                            <TableCell className="font-medium">{ad.brandName}</TableCell>
+                                            <TableCell>{ad.brandName || 'N/A'}</TableCell>
                                             <TableCell>
-                                                {ad.budget ? (
-                                                    <div className="flex items-center gap-1">
-                                                        <DollarSign className="w-3 h-3" />
-                                                        {ad.budget}
-                                                    </div>
-                                                ) : 'N/A'}
+                                                <Badge variant="outline">{ad.adSpot}</Badge>
                                             </TableCell>
                                             <TableCell>
-                                                {new Date(ad.createdDate).toLocaleDateString('en-US', {
+                                                {new Date(ad.createdAt).toLocaleDateString('en-US', {
                                                     month: 'short',
                                                     day: 'numeric',
                                                     year: 'numeric'
                                                 })}
                                             </TableCell>
-                                            <TableCell>{getStatusBadge(ad.status)}</TableCell>
+                                            <TableCell>{getStatusBadge(ad.isApproved)}</TableCell>
                                             <TableCell className="text-right">
                                                 <Button
                                                     size="sm"
                                                     variant="ghost"
                                                     className="text-red-600"
-                                                    onClick={() => handleDelete(ad.id)}
+                                                    onClick={() => handleDelete(ad._id)}
                                                     disabled={loading}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
@@ -273,29 +286,29 @@ function AdvertisementManagementContent() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Title</TableHead>
-                                            <TableHead>Advertiser</TableHead>
-                                            <TableHead>Budget</TableHead>
+                                            <TableHead>Brand Name</TableHead>
+                                            <TableHead>Contact</TableHead>
+                                            <TableHead>Ad Spot</TableHead>
                                             <TableHead>Status</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {pendingAdvertisements.map((ad) => (
-                                            <TableRow key={ad.id}>
-                                                <TableCell className="font-medium">{ad.title}</TableCell>
-                                                <TableCell>{ad.advertiser || 'N/A'}</TableCell>
+                                            <TableRow key={ad._id}>
+                                                <TableCell className="font-medium">{ad.brandName}</TableCell>
+                                                <TableCell>{ad.contactEmail}</TableCell>
                                                 <TableCell>
-                                                    {ad.budget ? `$${ad.budget}` : 'N/A'}
+                                                    <Badge variant="outline">{ad.adSpot}</Badge>
                                                 </TableCell>
-                                                <TableCell>{getStatusBadge(ad.status)}</TableCell>
+                                                <TableCell>{getStatusBadge(ad.isApproved)}</TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
                                                             className="text-green-600 hover:bg-green-50"
-                                                            onClick={() => handleApprove(ad.id)}
+                                                            onClick={() => handleApprove(ad._id)}
                                                             disabled={loading}
                                                         >
                                                             <CheckCircle className="w-4 h-4 mr-1" />
@@ -305,7 +318,7 @@ function AdvertisementManagementContent() {
                                                             size="sm"
                                                             variant="outline"
                                                             className="text-red-600 hover:bg-red-50"
-                                                            onClick={() => handleReject(ad.id)}
+                                                            onClick={() => handleReject(ad._id)}
                                                             disabled={loading}
                                                         >
                                                             <XCircle className="w-4 h-4 mr-1" />
@@ -337,21 +350,19 @@ function AdvertisementManagementContent() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Title</TableHead>
-                                            <TableHead>Advertiser</TableHead>
-                                            <TableHead>Budget</TableHead>
-                                            <TableHead>Impressions</TableHead>
+                                            <TableHead>Brand Name</TableHead>
+                                            <TableHead>Contact</TableHead>
+                                            <TableHead>Ad Spot</TableHead>
                                             <TableHead>Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {approvedAdvertisements.map((ad) => (
-                                            <TableRow key={ad.id}>
-                                                <TableCell className="font-medium">{ad.title}</TableCell>
-                                                <TableCell>{ad.advertiser || 'N/A'}</TableCell>
-                                                <TableCell>{ad.budget ? `$${ad.budget}` : 'N/A'}</TableCell>
-                                                <TableCell>{ad.impressions || 0}</TableCell>
-                                                <TableCell>{getStatusBadge(ad.status)}</TableCell>
+                                            <TableRow key={ad._id}>
+                                                <TableCell className="font-medium">{ad.brandName}</TableCell>
+                                                <TableCell>{ad.contactEmail}</TableCell>
+                                                <TableCell><Badge variant="outline">{ad.adSpot}</Badge></TableCell>
+                                                <TableCell>{getStatusBadge(ad.isApproved)}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>

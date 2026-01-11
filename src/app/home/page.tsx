@@ -3,6 +3,10 @@
 import React, { Suspense } from 'react'
 import { BuyerNavbar } from '@/components/landing/BuyerNavbar'
 import AdBanner from '@/components/landing/AdBanner'
+import AdFooter from '@/components/landing/AdFooter'
+import AdInline from '@/components/landing/AdInline'
+import AdMobileSticky from '@/components/landing/AdMobileSticky'
+import BuyerFooter from '@/components/landing/BuyerFooter'
 import { PetCard } from '@/components/landing/PetCard'
 import { FeaturedPetCard } from '@/components/landing/FeaturedPetCard'
 import FiltersPanel from '@/components/landing/FiltersPanel'
@@ -242,12 +246,18 @@ const BuyerHome = () => {
                                 </button>
                             </div>
                         ) : pets && pets.length > 0 ? (
-                            // 6. Pet Cards
+                            // 6. Pet Cards with inline ads
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             pets.map((pet: any, index: number) => (
-                                <div key={pet._id || index} className="transition-transform duration-300 hover:-translate-y-1">
-                                    <PetCard pet={pet} />
-                                </div>
+                                <React.Fragment key={pet._id || index}>
+                                    <div className="transition-transform duration-300 hover:-translate-y-1">
+                                        <PetCard pet={pet} />
+                                    </div>
+                                    {/* Show inline ad after every 3 pets for better visibility */}
+                                    {(index + 1) % 3 === 0 && (
+                                        <AdInline className="col-span-1" />
+                                    )}
+                                </React.Fragment>
                             ))
                         ) : (
                             // 7. Modern Empty State
@@ -262,6 +272,15 @@ const BuyerHome = () => {
                     </div>
                 </section>
             </main>
+
+            {/* Footer Ad */}
+            <AdFooter />
+
+            {/* Mobile Sticky Ad */}
+            <AdMobileSticky />
+
+            {/* Main Footer */}
+            <BuyerFooter />
         </div>
     )
 }

@@ -29,7 +29,7 @@ export const fetchAllAdvertisements = createAsyncThunk(
     'adminAdvertisements/fetchAll',
     async () => {
         const response = await getAllAdvertisements();
-        return response.advertisements;
+        return response;
     }
 );
 
@@ -37,7 +37,7 @@ export const fetchPendingAdvertisements = createAsyncThunk(
     'adminAdvertisements/fetchPending',
     async () => {
         const response = await getAllPendingAdvertisements();
-        return response.requests;
+        return response;
     }
 );
 
@@ -45,7 +45,7 @@ export const fetchApprovedAdvertisements = createAsyncThunk(
     'adminAdvertisements/fetchApproved',
     async () => {
         const response = await getAllApprovedAdvertisements();
-        return response.advertisements;
+        return response;
     }
 );
 
@@ -99,10 +99,10 @@ const adminAdvertisementsSlice = createSlice({
             // Update ad status
             .addCase(updateAdStatusThunk.fulfilled, (state, action: PayloadAction<{ adId: string; status: 'approved' | 'rejected' }>) => {
                 const { adId, status } = action.payload;
-                state.pendingAdvertisements = state.pendingAdvertisements.filter(ad => ad.id !== adId);
-                const ad = state.allAdvertisements.find(ad => ad.id === adId);
+                state.pendingAdvertisements = state.pendingAdvertisements.filter(ad => ad._id !== adId);
+                const ad = state.allAdvertisements.find(ad => ad._id === adId);
                 if (ad) {
-                    ad.status = status;
+                    ad.isApproved = status === 'approved';
                     if (status === 'approved') {
                         state.approvedAdvertisements.push(ad);
                     }
@@ -111,9 +111,9 @@ const adminAdvertisementsSlice = createSlice({
             // Delete advertisement
             .addCase(deleteAdThunk.fulfilled, (state, action: PayloadAction<string>) => {
                 const adId = action.payload;
-                state.allAdvertisements = state.allAdvertisements.filter(ad => ad.id !== adId);
-                state.pendingAdvertisements = state.pendingAdvertisements.filter(ad => ad.id !== adId);
-                state.approvedAdvertisements = state.approvedAdvertisements.filter(ad => ad.id !== adId);
+                state.allAdvertisements = state.allAdvertisements.filter(ad => ad._id !== adId);
+                state.pendingAdvertisements = state.pendingAdvertisements.filter(ad => ad._id !== adId);
+                state.approvedAdvertisements = state.approvedAdvertisements.filter(ad => ad._id !== adId);
             });
     },
 });
