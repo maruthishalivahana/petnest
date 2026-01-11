@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAdsByPlacement, trackAdClick, trackAdImpression, type AdListing } from "@/services/advertisementApi";
+import { getAdsByPlacementAndDevice, trackAdClick, trackAdImpression, type AdListing } from "@/services/advertisementApi";
 
 /**
  * Mobile sticky advertisement
@@ -32,7 +32,7 @@ export default function AdMobileSticky() {
         const loadAd = async () => {
             try {
                 setLoading(true);
-                const ads = await getAdsByPlacement('pet_mobile_sticky');
+                const ads = await getAdsByPlacementAndDevice('pet_mobile_sticky', 'mobile');
 
                 if (ads && ads.length > 0) {
                     const selectedAd = ads[0];
@@ -56,9 +56,12 @@ export default function AdMobileSticky() {
         }
     }, [isMobile]);
 
-    const handleClick = async () => {
+    const handleClick = async (e: React.MouseEvent) => {
+        e.preventDefault();
         if (ad?._id) {
             await trackAdClick(ad._id);
+        }
+        if (ad?.redirectUrl) {
             window.open(ad.redirectUrl, '_blank', 'noopener,noreferrer');
         }
     };
@@ -102,15 +105,29 @@ export default function AdMobileSticky() {
 
                         {/* Ad Text */}
                         <div className="flex-1 min-w-0">
-                            <div className="text-xs text-orange-600 font-semibold mb-1">
-                                SPONSORED
+                            <div className="flex items-center gap-1.5 text-xs mb-1">
+                                {ad.brandName && (
+                                    <span className="font-bold text-orange-700 uppercase">
+                                        {ad.brandName}
+                                    </span>
+                                )}
+                                {ad.brandName && <span className="text-orange-400">•</span>}
+                                <span className="text-orange-600 font-semibold uppercase">
+                                    SPONSORED
+                                </span>
                             </div>
                             <h4 className="text-sm font-bold text-gray-900 line-clamp-1 mb-1">
                                 {ad.title}
                             </h4>
-                            <p className="text-xs text-gray-600 line-clamp-1">
-                                {ad.ctaText || 'Tap to learn more'}
-                            </p>
+                            {ad.subtitle ? (
+                                <p className="text-xs text-gray-600 line-clamp-1">
+                                    {ad.subtitle}
+                                </p>
+                            ) : ad.tagline ? (
+                                <p className="text-xs text-gray-500 italic line-clamp-1">
+                                    {ad.tagline}
+                                </p>
+                            ) : null}
                         </div>
 
                         {/* CTA Button */}
@@ -118,7 +135,7 @@ export default function AdMobileSticky() {
                             size="sm"
                             className="bg-orange-600 hover:bg-orange-700 flex-shrink-0"
                         >
-                            View
+                            {ad.ctaText && ad.ctaText.length <= 10 ? ad.ctaText : 'View'}
                         </Button>
                     </div>
                 </div>

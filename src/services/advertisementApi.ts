@@ -48,6 +48,29 @@ export const getAdsByPlacement = async (placement: string): Promise<AdListing[]>
 };
 
 /**
+ * Get active ads by placement and device
+ * GET /v1/api/ads/placement?placement=<placement>&device=<device>
+ * @param placement - Ad placement location (home_top_banner, home_footer, etc.)
+ * @param device - Device type (mobile, desktop, both) - optional
+ */
+export const getAdsByPlacementAndDevice = async (
+    placement: string,
+    device?: 'mobile' | 'desktop' | 'both'
+): Promise<AdListing[]> => {
+    try {
+        let url = `/v1/api/ads/placement?placement=${placement}`;
+        if (device) {
+            url += `&device=${device}`;
+        }
+        const response = await apiClient.get<GetActiveAdsResponse>(url);
+        return response.data.data || [];
+    } catch (error) {
+        console.error(`Error fetching ads for placement ${placement} and device ${device}:`, error);
+        return [];
+    }
+};
+
+/**
  * Track ad impression (when ad becomes visible)
  * POST /v1/api/ads/:id/impression
  * @param adId - The ID of the ad
@@ -83,11 +106,12 @@ export const trackAdClick = async (adId: string): Promise<boolean> => {
 
 /**
  * Get feed with inline ads
- * GET /v1/api/feed
+ * GET /v1/api/ads/feed
+ * Returns a mix of pets and inline ads
  */
 export const getFeedWithAds = async (): Promise<FeedResponse> => {
     try {
-        const response = await apiClient.get<FeedResponse>('/v1/api/feed');
+        const response = await apiClient.get<FeedResponse>('/v1/api/ads/feed');
         return response.data;
     } catch (error) {
         console.error('Error fetching feed with ads:', error);

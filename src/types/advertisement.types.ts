@@ -38,6 +38,9 @@ export interface Advertisement {
 export interface AdListing {
     _id: string;
     title: string;
+    subtitle?: string;
+    tagline?: string;
+    brandName: string;
     imageUrl: string;
     ctaText: string;
     redirectUrl: string;

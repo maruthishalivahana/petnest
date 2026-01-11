@@ -253,8 +253,8 @@ const BuyerHome = () => {
                                     <div className="transition-transform duration-300 hover:-translate-y-1">
                                         <PetCard pet={pet} />
                                     </div>
-                                    {/* Show inline ad after every 6 pets */}
-                                    {(index + 1) % 6 === 0 && (
+                                    {/* Show inline ad after every 3 pets for better visibility */}
+                                    {(index + 1) % 3 === 0 && (
                                         <AdInline className="col-span-1" />
                                     )}
                                 </React.Fragment>

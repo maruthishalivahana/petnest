@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ExternalLink, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getAdsByPlacement, trackAdClick, trackAdImpression, type AdListing } from "@/services/advertisementApi";
+import { getAdsByPlacementAndDevice, trackAdClick, trackAdImpression, type AdListing } from "@/services/advertisementApi";
 
 interface AdDetailProps {
     className?: string;
@@ -19,11 +19,18 @@ export default function AdDetail({ className = "" }: AdDetailProps) {
     const [ad, setAd] = useState<AdListing | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // Detect device type
+    const getDeviceType = (): 'mobile' | 'desktop' => {
+        if (typeof window === 'undefined') return 'desktop';
+        return window.innerWidth < 768 ? 'mobile' : 'desktop';
+    };
+
     useEffect(() => {
         const loadAd = async () => {
             try {
                 setLoading(true);
-                const ads = await getAdsByPlacement('pet_detail_below_desc');
+                const device = getDeviceType();
+                const ads = await getAdsByPlacementAndDevice('pet_detail_below_desc', device);
 
                 if (ads && ads.length > 0) {
                     const selectedAd = ads[Math.floor(Math.random() * ads.length)];
@@ -44,9 +51,12 @@ export default function AdDetail({ className = "" }: AdDetailProps) {
         loadAd();
     }, []);
 
-    const handleClick = async () => {
+    const handleClick = async (e: React.MouseEvent) => {
+        e.preventDefault();
         if (ad?._id) {
             await trackAdClick(ad._id);
+        }
+        if (ad?.redirectUrl) {
             window.open(ad.redirectUrl, '_blank', 'noopener,noreferrer');
         }
     };
@@ -77,6 +87,12 @@ export default function AdDetail({ className = "" }: AdDetailProps) {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Sparkles className="w-5 h-5 text-white" />
+                        {ad.brandName && (
+                            <span className="text-sm font-bold text-white uppercase tracking-wide">
+                                {ad.brandName}
+                            </span>
+                        )}
+                        {ad.brandName && <span className="text-white/70 mx-1">•</span>}
                         <span className="text-sm font-bold text-white uppercase tracking-wide">
                             Sponsored Content
                         </span>
@@ -100,9 +116,15 @@ export default function AdDetail({ className = "" }: AdDetailProps) {
                     {ad.title}
                 </h3>
 
-                {ad.ctaText && (
-                    <p className="text-gray-600 mb-6 leading-relaxed">
-                        {ad.ctaText}
+                {ad.subtitle && (
+                    <p className="text-gray-700 mb-4 text-lg leading-relaxed">
+                        {ad.subtitle}
+                    </p>
+                )}
+
+                {ad.tagline && (
+                    <p className="text-gray-600 mb-6 italic">
+                        "{ad.tagline}"
                     </p>
                 )}
 

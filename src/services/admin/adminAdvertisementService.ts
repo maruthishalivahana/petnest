@@ -10,6 +10,9 @@ import type {
     ApiSuccessResponse,
 } from '@/types/advertisement.types';
 
+// Re-export types for convenience
+export type { Advertisement, AdListing, AdRequest };
+
 /**
  * API Response types
  */

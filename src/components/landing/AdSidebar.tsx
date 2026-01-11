@@ -29,8 +29,12 @@ export default function AdSidebar({
         const loadAds = async () => {
             try {
                 setLoading(true);
-                const advertisements = await fetchApprovedAdvertisements(adSpot);
-                setAds(advertisements.slice(0, maxAds));
+                const advertisements = await fetchApprovedAdvertisements();
+                // Filter by adSpot if provided
+                const filteredAds = adSpot
+                    ? advertisements.filter(ad => ad.adSpot === adSpot)
+                    : advertisements;
+                setAds(filteredAds.slice(0, maxAds));
             } catch (error) {
                 console.error("Failed to load sidebar ads:", error);
             } finally {

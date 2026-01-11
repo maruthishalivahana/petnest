@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import {
@@ -12,7 +12,7 @@ import {
     type CarouselApi,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { getAdsByPlacement, type AdListing } from "@/services/advertisementApi";
+import { getAdsByPlacementAndDevice, trackAdImpression, trackAdClick, type AdListing } from "@/services/advertisementApi";
 
 // Fallback ads when no ads are available from backend
 const fallbackAds = [
@@ -21,7 +21,8 @@ const fallbackAds = [
         image: "https://images.unsplash.com/photo-1600077106724-946750eeaf3c?w=1920&q=80",
         title: "Welcome to PetNest",
         subtitle: "Find Your Perfect Pet Companion Today",
-        badge: "Featured",
+        tagline: "Where Pets Meet Their Forever Homes",
+        brandName: "PetNest",
         button: "Explore Pets",
         link: "#",
         gradient: "from-orange-600/80 via-orange-500/60 to-transparent",
@@ -41,8 +42,9 @@ interface AdDisplay {
     id: string;
     image: string;
     title: string;
-    subtitle: string;
-    badge: string;
+    subtitle?: string;
+    tagline?: string;
+    brandName?: string;
     button: string;
     link: string;
     gradient: string;
@@ -52,24 +54,35 @@ export default function AdBanner() {
     const [api, setApi] = useState<CarouselApi>();
     const [current, setCurrent] = useState(0);
     const [ads, setAds] = useState<AdDisplay[]>(fallbackAds);
+    const [backendAds, setBackendAds] = useState<AdListing[]>([]);
     const [loading, setLoading] = useState(true);
+    const trackedImpressions = useRef<Set<string>>(new Set());
+
+    // Detect device type
+    const getDeviceType = (): 'mobile' | 'desktop' => {
+        if (typeof window === 'undefined') return 'desktop';
+        return window.innerWidth < 768 ? 'mobile' : 'desktop';
+    };
 
     // Fetch advertisements from backend
     useEffect(() => {
         const loadAdvertisements = async () => {
             try {
                 setLoading(true);
-                const advertisements = await getAdsByPlacement('home_top_banner');
+                const device = getDeviceType();
+                const advertisements = await getAdsByPlacementAndDevice('home_top_banner', device);
 
                 if (advertisements && advertisements.length > 0) {
+                    setBackendAds(advertisements);
                     // Transform backend ads to display format
                     const transformedAds: AdDisplay[] = advertisements.map((ad, index) => ({
                         id: ad._id,
                         image: ad.imageUrl,
                         title: ad.title,
-                        subtitle: ad.ctaText || 'Learn More',
-                        badge: "Featured",
-                        button: "Learn More",
+                        subtitle: ad.subtitle,
+                        tagline: ad.tagline,
+                        brandName: ad.brandName,
+                        button: ad.ctaText || "Learn More",
                         link: ad.redirectUrl,
                         gradient: gradients[index % gradients.length],
                     }));
@@ -77,10 +90,12 @@ export default function AdBanner() {
                 } else {
                     // Use fallback ads if no approved ads available
                     setAds(fallbackAds);
+                    setBackendAds([]);
                 }
             } catch (error) {
                 console.error("Failed to load advertisements:", error);
                 setAds(fallbackAds);
+                setBackendAds([]);
             } finally {
                 setLoading(false);
             }
@@ -98,6 +113,29 @@ export default function AdBanner() {
             setCurrent(api.selectedScrollSnap());
         });
     }, [api]);
+
+    // Track impression for currently visible ad
+    useEffect(() => {
+        const trackCurrentAdImpression = async () => {
+            if (backendAds.length > 0 && current < backendAds.length) {
+                const currentAd = backendAds[current];
+                if (currentAd && !trackedImpressions.current.has(currentAd._id)) {
+                    await trackAdImpression(currentAd._id);
+                    trackedImpressions.current.add(currentAd._id);
+                }
+            }
+        };
+
+        trackCurrentAdImpression();
+    }, [current, backendAds]);
+
+    // Handle ad click
+    const handleAdClick = async (adId: string, redirectUrl: string) => {
+        if (adId && backendAds.find(ad => ad._id === adId)) {
+            await trackAdClick(adId);
+        }
+        window.open(redirectUrl, '_blank', 'noopener,noreferrer');
+    };
 
     // Show loading state
     if (loading) {
@@ -149,13 +187,15 @@ export default function AdBanner() {
 
                                 {/* Content Overlay */}
                                 <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-8 md:px-12 lg:px-16">
-                                    {/* Badge */}
-                                    <div className="inline-flex items-center gap-1.5 w-fit mb-3 sm:mb-4 px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-full border border-white/30 animate-in fade-in slide-in-from-left-4 duration-500">
-                                        <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
-                                        <span className="text-white text-xs sm:text-sm font-semibold tracking-wide">
-                                            {ad.badge}
-                                        </span>
-                                    </div>
+                                    {/* Brand Badge */}
+                                    {ad.brandName && (
+                                        <div className="inline-flex items-center gap-1.5 w-fit mb-3 sm:mb-4 px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-full border border-white/30 animate-in fade-in slide-in-from-left-4 duration-500">
+                                            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
+                                            <span className="text-white text-xs sm:text-sm font-semibold tracking-wide">
+                                                {ad.brandName}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     {/* Title */}
                                     <h2 className="text-white font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl drop-shadow-2xl mb-2 sm:mb-3 max-w-2xl leading-tight animate-in fade-in slide-in-from-left-6 duration-700">
@@ -163,20 +203,30 @@ export default function AdBanner() {
                                     </h2>
 
                                     {/* Subtitle */}
-                                    <p className="text-white/95 text-sm sm:text-base md:text-lg lg:text-xl font-medium mb-5 sm:mb-6 max-w-xl drop-shadow-lg animate-in fade-in slide-in-from-left-8 duration-1000">
-                                        {ad.subtitle}
-                                    </p>
+                                    {ad.subtitle && (
+                                        <p className="text-white/95 text-sm sm:text-base md:text-lg lg:text-xl font-medium mb-3 sm:mb-4 max-w-xl drop-shadow-lg animate-in fade-in slide-in-from-left-8 duration-1000">
+                                            {ad.subtitle}
+                                        </p>
+                                    )}
+
+                                    {/* Tagline */}
+                                    {ad.tagline && (
+                                        <p className="text-white/90 text-xs sm:text-sm md:text-base font-normal mb-5 sm:mb-6 max-w-lg drop-shadow-lg animate-in fade-in slide-in-from-left-9 duration-1200 italic">
+                                            {ad.tagline}
+                                        </p>
+                                    )}
 
                                     {/* CTA Button */}
-                                    <a
-                                        href={ad.link}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            handleAdClick(ad.id, ad.link);
+                                        }}
                                         className="inline-flex items-center justify-center w-fit bg-white hover:bg-gray-50 text-gray-900 px-6 sm:px-8 py-3 sm:py-3.5 rounded-full font-bold text-sm sm:text-base shadow-2xl hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 animate-in fade-in slide-in-from-left-10"
                                     >
                                         {ad.button}
                                         <ChevronRight className="ml-1 w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform" />
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         </CarouselItem>
