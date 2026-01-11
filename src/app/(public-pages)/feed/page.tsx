@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, MapPin, DollarSign, Loader2 } from "lucide-react";
+import { Heart, MapPin, DollarSign, Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { adTracker } from "@/utils/adTracker";
 import BuyerFooter from "@/components/landing/BuyerFooter";
 
@@ -146,11 +146,14 @@ export default function FeedPage() {
                                 pet={item.data as Pet}
                             />
                         ) : (
-                            <InlineAdCard
-                                key={`ad-${(item.data as Advertisement)._id}-${index}`}
-                                ad={item.data as Advertisement}
-                            />
+                            <div className="col-span-full">
+                                <InlineAdCard
+                                    key={`ad-${(item.data as Advertisement)._id}-${index}`}
+                                    ad={item.data as Advertisement}
+                                />
+                            </div>
                         )
+
                     )}
                 </div>
 
@@ -259,43 +262,67 @@ function InlineAdCard({ ad }: { ad: Advertisement }) {
     const handleAdClick = () => {
         const redirectUrl = ad.redirectUrl || `mailto:${ad.contactEmail}`;
         adTracker.trackClick(ad._id, redirectUrl);
+        window.open(redirectUrl, "_blank");
     };
 
     return (
-        <Card
+        <div
             ref={adRef}
-            className="overflow-hidden hover:shadow-lg transition-shadow duration-300 bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200"
+            onClick={handleAdClick}
+            className="relative w-full rounded-2xl bg-slate-50 p-6 sm:p-8 cursor-pointer transition hover:shadow-md"
         >
-            <div className="relative">
-                <Badge
-                    variant="secondary"
-                    className="absolute top-2 left-2 bg-white/90 text-gray-600 text-xs z-10"
-                >
-                    Sponsored
-                </Badge>
-                <div className="relative h-48 overflow-hidden">
-                    <Image
-                        src={ad.mediaUrl || "/placeholder-ad.jpg"}
-                        alt={ad.brandName}
-                        fill
-                        className="object-cover"
-                    />
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+
+                {/* LEFT CONTENT */}
+                <div className="max-w-xl space-y-3">
+                    <div className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600">
+                        <Sparkles className="w-4 h-4" />
+                        {ad.brandName}
+                    </div>
+
+                    <h3 className="text-2xl sm:text-3xl font-bold text-zinc-900">
+                        {ad.brandName}
+                    </h3>
+
+                    <p className="text-zinc-600 text-sm sm:text-base leading-relaxed line-clamp-2">
+                        {ad.message}
+                    </p>
+
+                    <Button
+                        className="rounded-full px-5"
+                        onClick={handleAdClick}
+                    >
+                        Learn More
+                        <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                </div>
+
+                {/* RIGHT FLOATING UI */}
+                <div className="relative hidden md:block w-[220px] h-[140px]">
+                    {/* Bubble 1 */}
+                    <div className="absolute top-0 right-8 bg-white rounded-xl px-4 py-2 shadow-sm text-sm font-medium">
+                        Verified
+                    </div>
+
+                    {/* Bubble 2 */}
+                    <div className="absolute top-12 left-0 bg-white rounded-xl px-4 py-2 shadow-sm text-sm font-medium">
+                        Trusted Brand
+                    </div>
+
+                    {/* Image Bubble */}
+                    <div className="absolute bottom-0 right-6 bg-white p-1 rounded-full shadow-md">
+                        <div className="relative w-14 h-14 rounded-full overflow-hidden">
+                            <Image
+                                src={ad.mediaUrl || "/placeholder-ad.jpg"}
+                                alt={ad.brandName}
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
-            <CardContent className="p-4">
-                <h3 className="font-semibold text-lg text-gray-900 mb-1">
-                    {ad.brandName}
-                </h3>
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {ad.message}
-                </p>
-                <Button
-                    onClick={handleAdClick}
-                    className="w-full bg-orange-500 hover:bg-orange-600"
-                >
-                    Learn More
-                </Button>
-            </CardContent>
-        </Card>
+        </div>
     );
 }
+
