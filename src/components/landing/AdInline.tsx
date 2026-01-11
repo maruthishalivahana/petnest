@@ -2,27 +2,28 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Sparkles } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, Sparkles, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getAdsByPlacementAndDevice, trackAdClick, trackAdImpression, type AdListing } from "@/services/advertisementApi";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+    getAdsByPlacementAndDevice,
+    trackAdClick,
+    trackAdImpression,
+    type AdListing,
+} from "@/services/advertisementApi";
+import { cn } from "@/lib/utils";
 
 interface AdInlineProps {
     className?: string;
 }
 
-/**
- * Inline advertisement component for pet feed
- * Blends naturally with feed content
- */
 export default function AdInline({ className = "" }: AdInlineProps) {
     const [ad, setAd] = useState<AdListing | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Detect device type
-    const getDeviceType = (): 'mobile' | 'desktop' => {
-        if (typeof window === 'undefined') return 'desktop';
-        return window.innerWidth < 768 ? 'mobile' : 'desktop';
+    const getDeviceType = (): "mobile" | "desktop" => {
+        if (typeof window === "undefined") return "desktop";
+        return window.innerWidth < 768 ? "mobile" : "desktop";
     };
 
     useEffect(() => {
@@ -30,26 +31,12 @@ export default function AdInline({ className = "" }: AdInlineProps) {
             try {
                 setLoading(true);
                 const device = getDeviceType();
-                console.log('[AdInline] Fetching ads for placement: pet_feed_inline, device:', device);
-
-                const ads = await getAdsByPlacementAndDevice('pet_feed_inline', device);
-
-                console.log('[AdInline] Received ads:', ads?.length || 0, 'ads');
-                console.log('[AdInline] Ads data:', ads);
+                const ads = await getAdsByPlacementAndDevice("pet_feed_inline", device);
 
                 if (ads && ads.length > 0) {
-                    // Randomly select one ad from available ads
                     const randomAd = ads[Math.floor(Math.random() * ads.length)];
-                    console.log('[AdInline] Selected ad:', randomAd);
                     setAd(randomAd);
-
-                    // Track impression
-                    if (randomAd._id) {
-                        await trackAdImpression(randomAd._id);
-                        console.log('[AdInline] Impression tracked for ad:', randomAd._id);
-                    }
-                } else {
-                    console.warn('[AdInline] No ads available for pet_feed_inline placement');
+                    if (randomAd._id) await trackAdImpression(randomAd._id);
                 }
             } catch (error) {
                 console.error("[AdInline] Failed to load inline ad:", error);
@@ -57,89 +44,113 @@ export default function AdInline({ className = "" }: AdInlineProps) {
                 setLoading(false);
             }
         };
-
         loadAd();
     }, []);
 
     const handleClick = async () => {
         if (ad?._id) {
             await trackAdClick(ad._id);
-            window.open(ad.redirectUrl, '_blank', 'noopener,noreferrer');
+            window.open(ad.redirectUrl, "_blank", "noopener,noreferrer");
         }
     };
 
     if (loading) {
-        console.log('[AdInline] Loading state...');
         return (
-            <Card className={`overflow-hidden ${className}`}>
-                <div className="animate-pulse">
-                    <div className="h-48 bg-gray-200"></div>
-                    <CardContent className="p-4 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </CardContent>
+            <div className={cn("w-full overflow-hidden rounded-3xl shadow-xl", className)}>
+                <div className="relative h-[240px] sm:h-[300px] md:h-[380px] lg:h-[420px] bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
+                    <div className="h-full px-8 sm:px-10 lg:px-14 py-8 sm:py-10">
+                        <Skeleton className="h-7 w-28 rounded-full mb-4" />
+                        <Skeleton className="h-10 sm:h-12 w-3/4 rounded-lg mb-3" />
+                        <Skeleton className="h-5 w-2/3 rounded-lg mb-6" />
+                        <Skeleton className="h-12 w-36 rounded-full" />
+                    </div>
                 </div>
-            </Card>
+            </div>
         );
     }
 
-    if (!ad) {
-        console.log('[AdInline] No ad to display - returning null');
-        return null;
-    }
+    if (!ad) return null;
 
-    console.log('[AdInline] Rendering ad:', ad.title);
+    const gradients = [
+        "from-blue-400/90 via-blue-500/80 to-blue-600/90",
+        "from-orange-400/90 via-orange-500/80 to-orange-600/90",
+        "from-purple-400/90 via-purple-500/80 to-purple-600/90",
+        "from-green-400/90 via-green-500/80 to-emerald-600/90",
+        "from-pink-400/90 via-pink-500/80 to-rose-600/90",
+        "from-amber-300/90 via-yellow-400/80 to-orange-500/90"
+    ];
+    const gradient = gradients[Math.floor(Math.random() * gradients.length)];
 
     return (
-        <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 border-orange-200 ${className}`}>
-            {/* Sponsored Badge */}
-            <div className="bg-gradient-to-r from-orange-50 to-yellow-50 px-4 py-2 border-b border-orange-100">
-                <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-orange-600" />
-                    {ad.brandName && (
-                        <span className="text-xs font-bold text-orange-700 uppercase tracking-wide">
-                            {ad.brandName}
+        <div
+            onClick={handleClick}
+            className={cn(
+                "group relative w-full overflow-hidden rounded-3xl cursor-pointer shadow-xl transition-all duration-300 hover:shadow-2xl",
+                className
+            )}
+        >
+            <div
+                className={cn(
+                    "relative w-full h-[240px] sm:h-[300px] md:h-[380px] lg:h-[420px] bg-gradient-to-br",
+                    gradient
+                )}
+            >
+                {/* Background Image */}
+                <div className="absolute inset-0">
+                    <Image
+                        src={ad.imageUrl}
+                        alt={ad.title}
+                        fill
+                        className="object-cover object-center opacity-20"
+                        sizes="100vw"
+                        priority
+                    />
+                </div>
+
+                {/* Content */}
+                <div className="relative h-full px-8 sm:px-10 lg:px-14 py-8 sm:py-10 flex flex-col justify-center text-white">
+                    {/* Brand badge */}
+                    <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 sm:px-5 py-2 rounded-full w-fit mb-4">
+                        <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span className="text-xs sm:text-sm font-bold uppercase tracking-wide">
+                            {ad.brandName || "Sponsored"}
                         </span>
+                    </div>
+
+                    {/* Title */}
+                    <div className="mb-3">
+                        <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight">
+                            {ad.title}
+                        </h3>
+                    </div>
+
+                    {/* Subtitle */}
+                    {ad.subtitle && (
+                        <div className="mb-6">
+                            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/90 leading-relaxed font-medium line-clamp-2 max-w-2xl">
+                                {ad.subtitle}
+                            </p>
+                        </div>
                     )}
-                    {ad.brandName && <span className="text-xs text-orange-400">•</span>}
-                    <span className="text-xs font-semibold text-orange-600 uppercase tracking-wide">
-                        Sponsored
-                    </span>
+
+                    {/* CTA Button */}
+                    <div>
+                        <Button
+                            className="bg-white text-gray-900 hover:bg-white/90 rounded-full px-6 sm:px-8 py-3 sm:py-3.5 text-sm sm:text-base lg:text-lg font-bold shadow-xl transition-all duration-300 group-hover:scale-105 w-fit"
+                        >
+                            {ad.ctaText || "Start Now"}
+                            <ArrowRight className="ml-2 sm:ml-2.5 w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:translate-x-1" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* External link icon - top right corner */}
+                <div className="absolute top-3 right-3 sm:top-4 sm:right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="bg-white/20 backdrop-blur-md p-1.5 sm:p-2 rounded-full">
+                        <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                    </div>
                 </div>
             </div>
-
-            {/* Ad Image */}
-            <div className="relative w-full h-48">
-                <Image
-                    src={ad.imageUrl}
-                    alt={ad.title}
-                    fill
-                    className="object-cover"
-                />
-            </div>
-
-            {/* Ad Content */}
-            <CardContent className="p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
-                    {ad.title}
-                </h3>
-                {ad.subtitle && (
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                        {ad.subtitle}
-                    </p>
-                )}
-                {ad.tagline && (
-                    <p className="text-xs text-gray-500 italic mb-3 line-clamp-1">
-                        {ad.tagline}
-                    </p>
-                )}
-                <Button
-                    onClick={handleClick}
-                    className="w-full bg-orange-600 hover:bg-orange-700"
-                >
-                    {ad.ctaText || 'Learn More'}
-                </Button>
-            </CardContent>
-        </Card>
+        </div>
     );
 }

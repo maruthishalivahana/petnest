@@ -22,6 +22,10 @@ export function BuyerNavbar() {
         router.push('/wishlist');
     };
 
+    const navigateToProfile = () => {
+        router.push('/profile');
+    };
+
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         dispatch(setSearchQuery(e.target.value));
     };
@@ -74,6 +78,7 @@ export function BuyerNavbar() {
                             <span className="hidden xl:inline">Wishlist</span>
                         </Button>
                         <Button
+                            onClick={navigateToProfile}
                             variant="outline"
                             className="rounded-full gap-2 h-10"
                         >
@@ -136,6 +141,7 @@ export function BuyerNavbar() {
                         <div className="flex flex-col gap-2">
                             <div className="flex flex-col gap-2 px-2 sm:px-4">
                                 <Button
+                                    onClick={navigateToProfile}
                                     variant="outline"
                                     className="w-full rounded-full gap-2 justify-center h-11 sm:h-12 text-sm sm:text-base"
                                 >
