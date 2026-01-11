@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,8 +34,6 @@ import {
     Eye,
     Edit,
     Trash2,
-    Search,
-    Filter,
     ArrowUpDown,
     Plus,
     ChevronLeft,
@@ -44,8 +41,10 @@ import {
     Image as ImageIcon,
     Copy,
     FileX2,
+    CheckCircle,
+    XCircle,
 } from "lucide-react";
-import type { Advertisement, AdListing } from "@/types/advertisement.types";
+import type { Advertisement, AdListing, AdRequest } from "@/types/advertisement.types";
 import {
     getAllAdvertisements,
     getAllPendingAdvertisements,
@@ -56,6 +55,8 @@ import {
     deleteAdvertisement,
     duplicateAdvertisement,
     getAdvertisementsWithFilters,
+    getPendingAdRequests,
+    getApprovedAdRequests,
 } from "@/services/admin/adminAdvertisementService";
 import AdDetailsDialog from "./AdDetailsDialog";
 import ConfirmDialog from "./ConfirmDialog";
@@ -64,16 +65,17 @@ interface AdvertisementsTableProps {
     type: "pending" | "approved" | "listings";
 }
 
-// Union type for both Advertisement and AdListing
-type AdData = Advertisement | AdListing;
+// Union type for Advertisement, AdListing, and AdRequest
+type AdData = Advertisement | AdListing | AdRequest;
 
 // Extended type with metrics
-interface AdWithMetrics extends Partial<Advertisement & AdListing> {
+interface AdWithMetrics extends Partial<Advertisement & AdListing & AdRequest> {
     _id: string;
     impressions?: number;
     clicks?: number;
     ctr?: number;
     isActive?: boolean;
+    status?: 'pending' | 'approved' | 'rejected';
     // Common display fields
     displayTitle?: string;
     displayImage?: string;
@@ -93,12 +95,6 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
     const [selectedAd, setSelectedAd] = useState<AdWithMetrics | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-    // Filters & Search
-    const [searchTerm, setSearchTerm] = useState("");
-    const [placementFilter, setPlacementFilter] = useState<string>("all");
-    const [statusFilter, setStatusFilter] = useState<string>("all");
-    const [deviceFilter, setDeviceFilter] = useState<string>("all");
 
     // Sorting
     const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -122,7 +118,7 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
 
     useEffect(() => {
         filterAndSortAds();
-    }, [advertisements, searchTerm, placementFilter, statusFilter, deviceFilter, sortField, sortOrder]);
+    }, [advertisements, sortField, sortOrder]);
 
     const fetchAdvertisements = async () => {
         try {
@@ -130,9 +126,9 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
             let dataWithMetrics: AdWithMetrics[] = [];
 
             if (type === "listings") {
-                // Use the new AdListing API
-                const listings = await getAllAdListings();
-                dataWithMetrics = listings.map(ad => {
+                const result = await getAdvertisementsWithFilters();
+
+                dataWithMetrics = result.data.map(ad => {
                     const ctr = ad.impressions > 0 ? (ad.clicks / ad.impressions) * 100 : 0;
                     return {
                         ...ad,
@@ -142,34 +138,37 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
                         displayPlacement: ad.placement,
                     };
                 });
-            } else {
-                // Use the old Advertisement API
-                let data: Advertisement[] = [];
+            } else if (type === "pending") {
+                const requests = await getPendingAdRequests();
 
-                switch (type) {
-                    case "pending":
-                        data = await getAllPendingAdvertisements();
-                        break;
-                    case "approved":
-                        data = await getAllApprovedAdvertisements();
-                        break;
-                }
+                dataWithMetrics = requests.map(request => ({
+                    ...request,
+                    impressions: 0,
+                    clicks: 0,
+                    ctr: 0,
+                    isActive: false,
+                    displayTitle: request.brandName,
+                    displayImage: request.mediaUrl,
+                    displayPlacement: request.requestedPlacement,
+                }));
+            } else if (type === "approved") {
+                const requests = await getApprovedAdRequests();
 
-                // Mock metrics data for old advertisement format
-                dataWithMetrics = data.map(ad => ({
-                    ...ad,
-                    impressions: Math.floor(Math.random() * 10000),
-                    clicks: Math.floor(Math.random() * 500),
-                    ctr: Math.random() * 5,
-                    isActive: ad.isApproved || false,
-                    displayTitle: ad.brandName,
-                    displayImage: ad.mediaUrl,
-                    displayPlacement: ad.adSpot,
+                dataWithMetrics = requests.map(request => ({
+                    ...request,
+                    impressions: 0,
+                    clicks: 0,
+                    ctr: 0,
+                    isActive: false,
+                    displayTitle: request.brandName,
+                    displayImage: request.mediaUrl,
+                    displayPlacement: request.requestedPlacement,
                 }));
             }
 
             setAdvertisements(dataWithMetrics);
         } catch (error: any) {
+            console.error('Fetch advertisements error:', error);
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -183,37 +182,7 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
     const filterAndSortAds = () => {
         let filtered = [...advertisements];
 
-        // Search filter
-        if (searchTerm) {
-            filtered = filtered.filter(ad =>
-                (ad.displayTitle || ad.brandName || ad.title || '')
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase())
-            );
-        }
-
-        // Placement filter
-        if (placementFilter !== "all") {
-            filtered = filtered.filter(ad =>
-                ad.displayPlacement === placementFilter ||
-                ad.adSpot === placementFilter ||
-                ad.placement === placementFilter
-            );
-        }
-
-        // Status filter
-        if (statusFilter === "active") {
-            filtered = filtered.filter(ad => ad.isActive);
-        } else if (statusFilter === "inactive") {
-            filtered = filtered.filter(ad => !ad.isActive);
-        }
-
-        // Device filter
-        if (deviceFilter !== "all") {
-            filtered = filtered.filter(ad => ad.device === deviceFilter);
-        }
-
-        // Sorting
+        // Sorting only
         filtered.sort((a, b) => {
             let aVal, bVal;
 
@@ -248,7 +217,6 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
         });
 
         setFilteredAds(filtered);
-        setCurrentPage(1); // Reset to first page when filters change
     };
 
     const handleSort = (field: SortField) => {
@@ -306,13 +274,28 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
 
     const handleToggleStatus = async (adId: string) => {
         try {
+            // Optimistically update the UI first
+            setAdvertisements((prev) =>
+                prev.map((ad) =>
+                    ad._id === adId ? { ...ad, isActive: !ad.isActive } : ad
+                )
+            );
+
             await toggleAdStatus(adId);
             toast({
                 title: "Success",
                 description: "Advertisement status updated successfully",
             });
+
+            // Refetch to ensure data consistency
             fetchAdvertisements();
         } catch (error: any) {
+            // Revert the optimistic update on error
+            setAdvertisements((prev) =>
+                prev.map((ad) =>
+                    ad._id === adId ? { ...ad, isActive: !ad.isActive } : ad
+                )
+            );
             toast({
                 variant: "destructive",
                 title: "Error",
@@ -384,6 +367,12 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
         if (!confirmDialog) return;
 
         switch (confirmDialog.type) {
+            case "approve":
+                if (confirmDialog.adId) await handleApprove(confirmDialog.adId);
+                break;
+            case "reject":
+                if (confirmDialog.adId) await handleReject(confirmDialog.adId);
+                break;
             case "toggle":
                 if (confirmDialog.adId) await handleToggleStatus(confirmDialog.adId);
                 break;
@@ -399,6 +388,44 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
         }
 
         setConfirmDialog(null);
+    };
+
+    const handleApprove = async (adId: string) => {
+        try {
+            await updateAdvertisementStatus(adId, 'approved');
+            toast({
+                title: "Success",
+                description: "Advertisement request approved successfully",
+            });
+            fetchAdvertisements();
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: error.response?.data?.message || "Failed to approve request",
+            });
+        }
+    };
+
+    const handleReject = async (adId: string) => {
+        try {
+            console.log('Rejecting ad request:', adId);
+            const result = await updateAdvertisementStatus(adId, 'rejected');
+            console.log('Reject result:', result);
+            toast({
+                title: "Success",
+                description: "Advertisement request rejected",
+            });
+            fetchAdvertisements();
+        } catch (error: any) {
+            console.error('Reject error:', error);
+            console.error('Error response:', error.response);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: error.response?.data?.message || error.message || "Failed to reject request",
+            });
+        }
     };
 
     // Pagination logic
@@ -453,82 +480,16 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
 
     return (
         <div className="space-y-4">
-            {/* Toolbar: Search, Filters, and Actions */}
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                {/* Search */}
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        placeholder="Search by title..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9"
-                    />
-                </div>
-
-                {/* Filters */}
-                <div className="flex flex-wrap gap-2">
-                    <Select value={placementFilter} onValueChange={setPlacementFilter}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Placement" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Placements</SelectItem>
-                            <SelectItem value="home_top_banner">Home Top Banner</SelectItem>
-                            <SelectItem value="home_sidebar">Home Sidebar</SelectItem>
-                            <SelectItem value="pet_feed_inline">Pet Feed Inline</SelectItem>
-                            <SelectItem value="blog_sidebar">Blog Sidebar</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Status</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Select value={deviceFilter} onValueChange={setDeviceFilter}>
-                        <SelectTrigger className="w-[140px]">
-                            <SelectValue placeholder="Device" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Devices</SelectItem>
-                            <SelectItem value="mobile">Mobile</SelectItem>
-                            <SelectItem value="desktop">Desktop</SelectItem>
-                            <SelectItem value="both">Both</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Button
-                        variant="outline"
-                        onClick={() => router.push('/admin/advertisements/create')}
-                        className="gap-2"
-                    >
-                        <Plus className="h-4 w-4" />
-                        New Ad
-                    </Button>
-
-                    {(searchTerm || placementFilter !== "all" || statusFilter !== "all" || deviceFilter !== "all") && (
-                        <Button
-                            variant="ghost"
-                            onClick={() => {
-                                setSearchTerm("");
-                                setPlacementFilter("all");
-                                setStatusFilter("all");
-                                setDeviceFilter("all");
-                            }}
-                            className="gap-2"
-                        >
-                            <Filter className="h-4 w-4" />
-                            Clear Filters
-                        </Button>
-                    )}
-                </div>
+            {/* Toolbar: Actions */}
+            <div className="flex justify-end">
+                <Button
+                    variant="outline"
+                    onClick={() => router.push('/admin/advertisements/create')}
+                    className="gap-2"
+                >
+                    <Plus className="h-4 w-4" />
+                    New Ad
+                </Button>
             </div>
 
             {/* Bulk Actions */}
@@ -573,22 +534,10 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
                             ? "Create your first ad to start displaying to buyers across the platform"
                             : "Try adjusting your filters or search terms"}
                     </p>
-                    {advertisements.length === 0 ? (
+                    {advertisements.length === 0 && (
                         <Button onClick={() => router.push('/admin/advertisements/create')} className="gap-2">
                             <Plus className="h-4 w-4" />
                             Create Advertisement
-                        </Button>
-                    ) : (
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setSearchTerm("");
-                                setPlacementFilter("all");
-                                setStatusFilter("all");
-                                setDeviceFilter("all");
-                            }}
-                        >
-                            Clear Filters
                         </Button>
                     )}
                 </div>
@@ -613,24 +562,35 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
                                                 onClick={() => handleSort('title')}
                                                 className="gap-1 -ml-3"
                                             >
-                                                Title
+                                                {type === "approved" ? "Brand Name" : "Title"}
                                                 <ArrowUpDown className="h-3 w-3" />
                                             </Button>
                                         </TableHead>
                                         <TableHead>Placement</TableHead>
-                                        <TableHead className="hidden md:table-cell">Device</TableHead>
-                                        <TableHead className="hidden lg:table-cell">Campaign Dates</TableHead>
-                                        <TableHead>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleSort('impressions')}
-                                                className="gap-1 -ml-3"
-                                            >
-                                                Metrics
-                                                <ArrowUpDown className="h-3 w-3" />
-                                            </Button>
-                                        </TableHead>
+                                        {type === "approved" ? (
+                                            <>
+                                                <TableHead className="hidden md:table-cell">Contact</TableHead>
+                                                <TableHead className="hidden lg:table-cell">Submitted Date</TableHead>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <TableHead className="hidden md:table-cell">Device</TableHead>
+                                                {type === "listings" && <TableHead className="hidden lg:table-cell">Campaign Dates</TableHead>}
+                                                {type === "listings" && (
+                                                    <TableHead>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleSort('impressions')}
+                                                            className="gap-1 -ml-3"
+                                                        >
+                                                            Metrics
+                                                            <ArrowUpDown className="h-3 w-3" />
+                                                        </Button>
+                                                    </TableHead>
+                                                )}
+                                            </>
+                                        )}
                                         <TableHead className="w-20">Status</TableHead>
                                         <TableHead className="w-20 text-right">Actions</TableHead>
                                     </TableRow>
@@ -667,46 +627,74 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
                                             <TableCell>
                                                 {getPlacementBadge(ad.displayPlacement || ad.adSpot || ad.placement || '')}
                                             </TableCell>
-                                            <TableCell className="hidden md:table-cell">
-                                                <Badge variant="outline">
-                                                    {ad.device
-                                                        ? ad.device.charAt(0).toUpperCase() + ad.device.slice(1)
-                                                        : 'Both'}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                                                <div className="flex flex-col gap-1">
-                                                    <span>Start: {new Date(ad.startDate || ad.createdAt).toLocaleDateString()}</span>
-                                                    <span>End: {new Date(ad.endDate || ad.updatedAt).toLocaleDateString()}</span>
-                                                </div>
-                                            </TableCell>
+                                            {type === "approved" ? (
+                                                <>
+                                                    <TableCell className="hidden md:table-cell">
+                                                        <div className="flex flex-col gap-1 text-sm">
+                                                            <span className="font-medium">{ad.contactEmail}</span>
+                                                            <span className="text-muted-foreground">{ad.contactNumber}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                                                        {new Date(ad.createdAt).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </TableCell>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <TableCell className="hidden md:table-cell">
+                                                        <Badge variant="outline">
+                                                            {ad.device
+                                                                ? ad.device.charAt(0).toUpperCase() + ad.device.slice(1)
+                                                                : 'Both'}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    {type === "listings" && (
+                                                        <>
+                                                            <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                                                                <div className="flex flex-col gap-1">
+                                                                    <span>Start: {new Date(ad.startDate || ad.createdAt).toLocaleDateString()}</span>
+                                                                    <span>End: {new Date(ad.endDate || ad.updatedAt).toLocaleDateString()}</span>
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <div className="flex flex-col gap-1 text-sm">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-muted-foreground">Views:</span>
+                                                                        <span className="font-medium">{formatNumber(ad.impressions || 0)}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-muted-foreground">Clicks:</span>
+                                                                        <span className="font-medium">{formatNumber(ad.clicks || 0)}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-muted-foreground">CTR:</span>
+                                                                        <span className="font-medium">{(ad.ctr || 0).toFixed(2)}%</span>
+                                                                    </div>
+                                                                </div>
+                                                            </TableCell>
+                                                        </>
+                                                    )}
+                                                </>
+                                            )}
                                             <TableCell>
-                                                <div className="flex flex-col gap-1 text-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-muted-foreground">Views:</span>
-                                                        <span className="font-medium">{formatNumber(ad.impressions || 0)}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-muted-foreground">Clicks:</span>
-                                                        <span className="font-medium">{formatNumber(ad.clicks || 0)}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-muted-foreground">CTR:</span>
-                                                        <span className="font-medium">{(ad.ctr || 0).toFixed(2)}%</span>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Switch
-                                                    checked={ad.isActive || false}
-                                                    onCheckedChange={() =>
-                                                        setConfirmDialog({
-                                                            open: true,
-                                                            type: "toggle",
-                                                            adId: ad._id,
-                                                        })
-                                                    }
-                                                />
+                                                {type === "pending" || type === "approved" ? (
+                                                    <Badge variant="secondary">{ad.status || 'pending'}</Badge>
+                                                ) : (
+                                                    <Switch
+                                                        checked={ad.isActive || false}
+                                                        onCheckedChange={() =>
+                                                            setConfirmDialog({
+                                                                open: true,
+                                                                type: "toggle",
+                                                                adId: ad._id,
+                                                            })
+                                                        }
+                                                    />
+                                                )}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
@@ -720,27 +708,69 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
                                                             <Eye className="mr-2 h-4 w-4" />
                                                             View Details
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleEdit(ad._id)}>
-                                                            <Edit className="mr-2 h-4 w-4" />
-                                                            Edit
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleDuplicate(ad._id)}>
-                                                            <Copy className="mr-2 h-4 w-4" />
-                                                            Duplicate
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            onClick={() =>
-                                                                setConfirmDialog({
-                                                                    open: true,
-                                                                    type: "delete",
-                                                                    adId: ad._id,
-                                                                })
-                                                            }
-                                                            className="text-red-600"
-                                                        >
-                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                            Delete
-                                                        </DropdownMenuItem>
+
+                                                        {type === "pending" ? (
+                                                            <>
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        setConfirmDialog({
+                                                                            open: true,
+                                                                            type: "approve",
+                                                                            adId: ad._id,
+                                                                        })
+                                                                    }
+                                                                    className="text-green-600"
+                                                                >
+                                                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                                                    Approve
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        setConfirmDialog({
+                                                                            open: true,
+                                                                            type: "reject",
+                                                                            adId: ad._id,
+                                                                        })
+                                                                    }
+                                                                    className="text-red-600"
+                                                                >
+                                                                    <XCircle className="mr-2 h-4 w-4" />
+                                                                    Reject
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        ) : type === "approved" ? (
+                                                            <DropdownMenuItem onClick={() => router.push('/admin/advertisements/create')}>
+                                                                <Plus className="mr-2 h-4 w-4" />
+                                                                Create Ad Listing
+                                                            </DropdownMenuItem>
+                                                        ) : (
+                                                            <>
+                                                                <DropdownMenuItem onClick={() => handleEdit(ad._id)}>
+                                                                    <Edit className="mr-2 h-4 w-4" />
+                                                                    Edit
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleDuplicate(ad._id)}>
+                                                                    <Copy className="mr-2 h-4 w-4" />
+                                                                    Duplicate
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
+
+                                                        {type !== "approved" && (
+                                                            <DropdownMenuItem
+                                                                onClick={() =>
+                                                                    setConfirmDialog({
+                                                                        open: true,
+                                                                        type: "delete",
+                                                                        adId: ad._id,
+                                                                    })
+                                                                }
+                                                                className="text-red-600"
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -819,22 +849,30 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
                 }}
                 onConfirm={handleConfirmAction}
                 title={
-                    confirmDialog?.type === "delete"
-                        ? "Delete Advertisement"
-                        : confirmDialog?.type === "toggle"
-                            ? "Toggle Status"
-                            : confirmDialog?.type === "bulkActivate"
-                                ? "Activate Advertisements"
-                                : "Deactivate Advertisements"
+                    confirmDialog?.type === "approve"
+                        ? "Approve Advertisement Request"
+                        : confirmDialog?.type === "reject"
+                            ? "Reject Advertisement Request"
+                            : confirmDialog?.type === "delete"
+                                ? "Delete Advertisement"
+                                : confirmDialog?.type === "toggle"
+                                    ? "Toggle Status"
+                                    : confirmDialog?.type === "bulkActivate"
+                                        ? "Activate Advertisements"
+                                        : "Deactivate Advertisements"
                 }
                 description={
-                    confirmDialog?.type === "delete"
-                        ? "Are you sure you want to delete this advertisement? This action cannot be undone."
-                        : confirmDialog?.type === "toggle"
-                            ? "Are you sure you want to toggle the active status of this advertisement?"
-                            : confirmDialog?.type === "bulkActivate"
-                                ? `Are you sure you want to activate ${selectedIds.size} advertisements?`
-                                : `Are you sure you want to deactivate ${selectedIds.size} advertisements?`
+                    confirmDialog?.type === "approve"
+                        ? "Are you sure you want to approve this advertisement request? This will allow the advertiser to proceed."
+                        : confirmDialog?.type === "reject"
+                            ? "Are you sure you want to reject this advertisement request? The advertiser will be notified."
+                            : confirmDialog?.type === "delete"
+                                ? "Are you sure you want to delete this advertisement? This action cannot be undone."
+                                : confirmDialog?.type === "toggle"
+                                    ? "Are you sure you want to toggle the active status of this advertisement?"
+                                    : confirmDialog?.type === "bulkActivate"
+                                        ? `Are you sure you want to activate ${selectedIds.size} advertisements?`
+                                        : `Are you sure you want to deactivate ${selectedIds.size} advertisements?`
                 }
             />
         </div>

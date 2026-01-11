@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, MapPin, DollarSign, Loader2 } from "lucide-react";
 import { adTracker } from "@/utils/adTracker";
+import BuyerFooter from "@/components/landing/BuyerFooter";
 
 interface Pet {
     _id: string;
@@ -190,6 +191,9 @@ export default function FeedPage() {
                     </div>
                 )}
             </div>
+
+            {/* Main Footer */}
+            <BuyerFooter />
         </div>
     );
 }

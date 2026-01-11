@@ -16,6 +16,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { useAppDispatch } from '@/store/hooks'
 import { setCredentials } from '@/store/slices/authSlice'
+import { setWishlistItems } from '@/store/slices/wishlistSlice'
+import { getWishlistItems } from '@/services/wishlistApi'
 import { getRoleRoute } from '@/utils/roleRoutes'
 
 // removed unused import
@@ -47,6 +49,18 @@ const Login = () => {
             dispatch(setCredentials({ user, token }));
 
             console.log("Login successful:", user);
+
+            // Fetch wishlist before redirecting (important for showing filled hearts)
+            try {
+                console.log('🔄 [Login Component] Fetching wishlist...');
+                const wishlistItems = await getWishlistItems();
+                console.log('✅ [Login Component] Wishlist fetched:', wishlistItems.length, 'items');
+                dispatch(setWishlistItems({ items: wishlistItems, userId: user.id || user._id }));
+            } catch (wishlistError) {
+                console.error('❌ [Login Component] Failed to fetch wishlist:', wishlistError);
+                // Continue with login even if wishlist fails
+            }
+
             toast.success('Login successful!');            // Get redirect path from query params or use role-based default route
             const redirectPath = searchParams.get('redirect') || getRoleRoute(user.role);
 

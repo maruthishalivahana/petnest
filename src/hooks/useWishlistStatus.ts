@@ -22,6 +22,16 @@ export function useWishlistStatus(petId: string) {
     const [error, setError] = useState<string | null>(null);
     const [hasVerified, setHasVerified] = useState(false);
 
+    // Debug log
+    useEffect(() => {
+        console.log(`🔍 [useWishlistStatus] Pet ${petId}:`, {
+            isWishlisted,
+            wishlistedIds,
+            userId,
+            wishlistLastFetched: wishlistLastFetched ? new Date(wishlistLastFetched).toLocaleTimeString() : null
+        });
+    }, [petId, isWishlisted, wishlistedIds, userId, wishlistLastFetched]);
+
     useEffect(() => {
         let isMounted = true;
 

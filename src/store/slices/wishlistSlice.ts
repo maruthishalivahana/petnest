@@ -45,6 +45,11 @@ const wishlistSlice = createSlice({
             state.wishlistedIds = action.payload.items.map((pet) => pet._id);
             state.userId = action.payload.userId;
             state.lastFetched = Date.now();
+            console.log('💾 [Redux] Wishlist updated:', {
+                itemsCount: state.items.length,
+                wishlistedIds: state.wishlistedIds,
+                userId: state.userId
+            });
         },
 
         addWishlistItem: (state, action: PayloadAction<Pet>) => {

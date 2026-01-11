@@ -72,7 +72,7 @@ export interface AdvertisementRequestData {
     brandName: string;
     contactEmail: string;
     contactNumber: string;
-    adSpot: string;
+    requestedPlacement: string;
     message: string;
     mediaUrl: string;
 }
@@ -132,4 +132,124 @@ export interface AdvertisementError {
     message: string;
     error?: string;
     statusCode?: number;
+}
+
+/**
+ * Create Ad DTO (for POST /admin/ads)
+ */
+export interface CreateAdDTO {
+    title: string;
+    description?: string;
+    imageUrl: string;
+    targetUrl: string;
+    ctaText?: string;
+    placement: PlacementType;
+    device: DeviceType;
+    targetPages?: string[];
+    startDate: string;
+    endDate: string;
+    isActive?: boolean;
+}
+
+/**
+ * Update Ad DTO (for PATCH /admin/ads/:id)
+ */
+export interface UpdateAdDTO {
+    title?: string;
+    description?: string;
+    imageUrl?: string;
+    targetUrl?: string;
+    ctaText?: string;
+    placement?: PlacementType;
+    device?: DeviceType;
+    targetPages?: string[];
+    startDate?: string;
+    endDate?: string;
+    isActive?: boolean;
+}
+
+/**
+ * Ad Request (for advertisement requests from businesses)
+ * Matches the actual database structure
+ */
+export interface AdRequest {
+    _id: string;
+    brandName: string;
+    contactEmail: string;
+    contactNumber: string;
+    requestedPlacement: string;
+    message: string;
+    mediaUrl: string;
+    status: 'pending' | 'approved' | 'rejected';
+    rejectionReason?: string;
+    createdAt: string;
+    updatedAt: string;
+    __v?: number;
+}
+
+/**
+ * Update Ad Request Status DTO
+ */
+export interface UpdateAdRequestStatusDTO {
+    status: 'approved' | 'rejected';
+    rejectionReason?: string;
+}
+
+/**
+ * API Response for GET /ads (public)
+ */
+export interface GetActiveAdsResponse {
+    success: boolean;
+    data: AdListing[];
+    pagination: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    };
+}
+
+/**
+ * API Response for GET /admin/ad-requests
+ */
+export interface GetAdRequestsResponse {
+    success: boolean;
+    data: AdRequest[];
+    pagination: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    };
+}
+
+/**
+ * Feed Item (for GET /feed)
+ */
+export interface FeedItem {
+    type: 'pet' | 'ad';
+    data: any; // Pet or AdListing
+}
+
+/**
+ * Feed Response
+ */
+export interface FeedResponse {
+    success: boolean;
+    data: FeedItem[];
+    pagination: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    };
+}
+
+/**
+ * Generic API Success Response
+ */
+export interface ApiSuccessResponse<T = any> {
+    success: boolean;
+    message: string;
+    data?: T;
 }

@@ -29,7 +29,6 @@ const PLACEMENTS = [
 
 interface FormData {
     title: string;
-    imageUrl: string;
     ctaText: string;
     redirectUrl: string;
     placement: string;
@@ -43,10 +42,10 @@ export default function CreateAdvertisementPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
-    const [imagePreview, setImagePreview] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [formData, setFormData] = useState<FormData>({
         title: '',
-        imageUrl: '',
         ctaText: '',
         redirectUrl: '',
         placement: 'home_top_banner',
@@ -56,9 +55,39 @@ export default function CreateAdvertisementPage() {
         endDate: ''
     });
 
-    const handleImageUrlChange = (url: string) => {
-        setFormData({ ...formData, imageUrl: url });
-        setImagePreview(false);
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            toast({
+                title: 'Invalid File Type',
+                description: 'Please upload a JPEG, PNG, or WEBP image',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        // Validate file size (2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            toast({
+                title: 'File Too Large',
+                description: 'Image must be less than 2MB',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        setImageFile(file);
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -66,6 +95,17 @@ export default function CreateAdvertisementPage() {
         setLoading(true);
 
         try {
+            // Validate image
+            if (!imageFile) {
+                toast({
+                    title: 'Validation Error',
+                    description: 'Please upload an image',
+                    variant: 'destructive',
+                });
+                setLoading(false);
+                return;
+            }
+
             // Validate dates
             if (new Date(formData.endDate) <= new Date(formData.startDate)) {
                 toast({
@@ -77,22 +117,27 @@ export default function CreateAdvertisementPage() {
                 return;
             }
 
-            // Prepare data with ISO formatted dates
-            const payload = {
-                title: formData.title,
-                imageUrl: formData.imageUrl,
-                ctaText: formData.ctaText,
-                redirectUrl: formData.redirectUrl,
-                placement: formData.placement,
-                device: formData.device,
-                targetPages: formData.targetPages
-                    ? formData.targetPages.split(',').map(p => p.trim()).filter(Boolean)
-                    : [],
-                startDate: new Date(formData.startDate).toISOString(),
-                endDate: new Date(formData.endDate).toISOString()
-            };
+            // Prepare FormData for multipart upload
+            const submitData = new FormData();
+            submitData.append('title', formData.title);
+            submitData.append('image', imageFile);
+            submitData.append('ctaText', formData.ctaText);
+            submitData.append('redirectUrl', formData.redirectUrl);
+            submitData.append('placement', formData.placement);
+            submitData.append('device', formData.device);
+            submitData.append('startDate', new Date(formData.startDate).toISOString());
+            submitData.append('endDate', new Date(formData.endDate).toISOString());
 
-            const response = await apiClient.post('/v1/api/ads/admin/ads', payload);
+            if (formData.targetPages) {
+                const pages = formData.targetPages.split(',').map(p => p.trim()).filter(Boolean);
+                submitData.append('targetPages', JSON.stringify(pages));
+            }
+
+            const response = await apiClient.post('/v1/api/ads/admin/ads', submitData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
 
             if (response.data.success) {
                 toast({
@@ -103,7 +148,6 @@ export default function CreateAdvertisementPage() {
                 // Reset form
                 setFormData({
                     title: '',
-                    imageUrl: '',
                     ctaText: '',
                     redirectUrl: '',
                     placement: 'home_top_banner',
@@ -112,6 +156,10 @@ export default function CreateAdvertisementPage() {
                     startDate: '',
                     endDate: ''
                 });
+                setImageFile(null);
+                setImagePreview(null);
+                const input = document.getElementById('image') as HTMLInputElement;
+                if (input) input.value = '';
 
                 // Redirect to advertisements list after a short delay
                 setTimeout(() => {
@@ -179,60 +227,45 @@ export default function CreateAdvertisementPage() {
                             </p>
                         </div>
 
-                        {/* Image URL */}
+                        {/* Image Upload */}
                         <div className="space-y-2">
-                            <Label htmlFor="imageUrl">
-                                Image URL <span className="text-red-500">*</span>
+                            <Label htmlFor="image">
+                                Advertisement Image <span className="text-red-500">*</span>
                             </Label>
                             <Input
-                                id="imageUrl"
-                                type="url"
+                                id="image"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={handleImageChange}
                                 required
-                                value={formData.imageUrl}
-                                onChange={(e) => handleImageUrlChange(e.target.value)}
-                                placeholder="https://example.com/ad-image.jpg"
                             />
                             <p className="text-sm text-muted-foreground">
-                                URL of the advertisement image (must be a valid URL)
+                                Upload an image (JPEG, PNG, or WEBP, max 2MB)
                             </p>
 
                             {/* Image Preview */}
-                            {formData.imageUrl && (
-                                <div className="mt-3">
+                            {imagePreview && (
+                                <div className="mt-3 border rounded-lg p-4 bg-gray-50">
+                                    <p className="text-sm font-medium mb-2">Preview:</p>
+                                    <img
+                                        src={imagePreview}
+                                        alt="Ad Preview"
+                                        className="max-h-48 object-cover rounded mx-auto"
+                                    />
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => setImagePreview(true)}
-                                        className="mb-2"
+                                        onClick={() => {
+                                            setImageFile(null);
+                                            setImagePreview(null);
+                                            const input = document.getElementById('image') as HTMLInputElement;
+                                            if (input) input.value = '';
+                                        }}
+                                        className="mt-2"
                                     >
-                                        <ImageIcon className="h-4 w-4 mr-2" />
-                                        Preview Image
+                                        Remove Image
                                     </Button>
-
-                                    {imagePreview && (
-                                        <div className="border rounded-lg p-4 bg-gray-50">
-                                            <img
-                                                src={formData.imageUrl}
-                                                alt="Ad Preview"
-                                                className="max-h-48 object-cover rounded mx-auto"
-                                                onError={() => {
-                                                    setImagePreview(false);
-                                                    toast({
-                                                        title: 'Invalid Image',
-                                                        description: 'Unable to load image from the provided URL',
-                                                        variant: 'destructive',
-                                                    });
-                                                }}
-                                                onLoad={() => {
-                                                    toast({
-                                                        title: 'Image Loaded',
-                                                        description: 'Image preview loaded successfully',
-                                                    });
-                                                }}
-                                            />
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </div>

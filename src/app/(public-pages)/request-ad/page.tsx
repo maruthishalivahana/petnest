@@ -17,7 +17,7 @@ export default function AdvertisementRequestPage() {
         brandName: "",
         contactEmail: "",
         contactNumber: "",
-        adSpot: "",
+        requestedPlacement: "",
         message: "",
         mediaUrl: "",
     });
@@ -42,12 +42,17 @@ export default function AdvertisementRequestPage() {
                 brandName: "",
                 contactEmail: "",
                 contactNumber: "",
-                adSpot: "",
+                requestedPlacement: "",
                 message: "",
                 mediaUrl: "",
             });
         } catch (err: any) {
-            setError(err.response?.data?.message || "Failed to submit request. Please try again.");
+            console.error('Advertisement request error:', err);
+            const errorMessage = err.response?.data?.message
+                || err.response?.data?.error
+                || err.message
+                || "Failed to submit request. Please try again.";
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -182,22 +187,22 @@ export default function AdvertisementRequestPage() {
                                     />
                                 </div>
 
-                                {/* Ad Spot */}
+                                {/* Ad Placement */}
                                 <div className="space-y-2">
-                                    <Label htmlFor="adSpot">Advertisement Placement *</Label>
+                                    <Label htmlFor="requestedPlacement">Advertisement Placement *</Label>
                                     <Select
-                                        value={formData.adSpot}
-                                        onValueChange={(value) => handleChange("adSpot", value)}
+                                        value={formData.requestedPlacement}
+                                        onValueChange={(value) => handleChange("requestedPlacement", value)}
                                         required
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select placement location" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="homepageBanner">Homepage Banner (Premium)</SelectItem>
-                                            <SelectItem value="sidebar">Sidebar Advertisement</SelectItem>
+                                            <SelectItem value="home_top_banner">Homepage Banner (Premium)</SelectItem>
+                                            <SelectItem value="home_sidebar">Sidebar Advertisement</SelectItem>
                                             <SelectItem value="footer">Footer Advertisement</SelectItem>
-                                            <SelectItem value="blogFeature">Blog Feature Spot</SelectItem>
+                                            <SelectItem value="blog_feature">Blog Feature Spot</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <p className="text-xs text-gray-500">

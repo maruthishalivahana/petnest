@@ -12,7 +12,7 @@ import {
     type CarouselApi,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { fetchHomepageBanners, type Advertisement } from "@/services/advertisementApi";
+import { getAdsByPlacement, type AdListing } from "@/services/advertisementApi";
 
 // Fallback ads when no ads are available from backend
 const fallbackAds = [
@@ -59,18 +59,18 @@ export default function AdBanner() {
         const loadAdvertisements = async () => {
             try {
                 setLoading(true);
-                const advertisements = await fetchHomepageBanners();
+                const advertisements = await getAdsByPlacement('home_top_banner');
 
                 if (advertisements && advertisements.length > 0) {
                     // Transform backend ads to display format
                     const transformedAds: AdDisplay[] = advertisements.map((ad, index) => ({
                         id: ad._id,
-                        image: ad.mediaUrl,
-                        title: ad.brandName,
-                        subtitle: ad.message,
+                        image: ad.imageUrl,
+                        title: ad.title,
+                        subtitle: ad.ctaText || 'Learn More',
                         badge: "Featured",
                         button: "Learn More",
-                        link: ad.mediaUrl, // or a custom link if you have one
+                        link: ad.redirectUrl,
                         gradient: gradients[index % gradients.length],
                     }));
                     setAds(transformedAds);
