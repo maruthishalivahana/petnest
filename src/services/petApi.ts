@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+import apiClient from "@/lib/apiClient";
 
 // -------------------------
 // Types
@@ -56,34 +54,42 @@ interface ApiResponse<T = any> {
 }
 
 // -------------------------
-// Base Axios Config
-// -------------------------
-const api = axios.create({
-    baseURL: BASE_URL,
-    withCredentials: true,
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
-
-// -------------------------
-// Get Single Pet by ID
+// Get Single Pet by ID - SIMPLIFIED
 // -------------------------
 export const getPetById = async (petId: string): Promise<ApiResponse<Pet>> => {
     try {
-        const res = await api.get(`/v1/api/buyer/pets/${petId}`);
-        console.log("Pet details response:", res.data);
+        console.log('🔄 Fetching pet by ID:', petId);
+
+        // Simple GET request without extra headers that cause CORS preflight
+        const res = await apiClient.get(`/v1/api/buyer/pets/${petId}`);
+
+        const petData = res.data?.pet || res.data?.data || res.data || null;
+
+        console.log("✅ Pet details loaded:", petData?.name || 'Unknown');
 
         return {
             success: true,
             message: res.data?.message || "Pet details fetched successfully",
-            data: res.data?.pet || res.data?.data || res.data || null,
+            data: petData,
         };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
+        console.error("❌ Failed to fetch pet details:", err);
+
+        // Determine error message
+        let errorMessage = "Failed to fetch pet details";
+
+        if (err?.message?.includes('Network Error') || err?.code === 'ERR_NETWORK') {
+            errorMessage = "Connection error. Please check if you're logged in and the server is running.";
+        } else if (err?.response?.status === 401 || err?.response?.status === 403) {
+            errorMessage = "Please log in to view pet details";
+        } else if (err?.response?.data?.message) {
+            errorMessage = err.response.data.message;
+        }
+
         return {
             success: false,
-            message: err?.response?.data?.message || "Failed to fetch pet details",
+            message: errorMessage,
             data: null,
         };
     }
@@ -100,8 +106,11 @@ export const searchPets = async (keyword?: string): Promise<ApiResponse<Pet[]>> 
             queryParams.set("keyword", keyword.trim());
         }
 
-        const url = `/v1/api/buyer/pets/search${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-        const res = await api.get(url);
+        const url = queryParams.toString()
+            ? `/v1/api/buyer/pets/search?${queryParams.toString()}`
+            : '/v1/api/buyer/pets/search';
+
+        const res = await apiClient.get(url);
 
         return {
             success: true,
@@ -123,7 +132,7 @@ export const searchPets = async (keyword?: string): Promise<ApiResponse<Pet[]>> 
 // -------------------------
 export const getAllBreedNames = async (): Promise<string[]> => {
     try {
-        const res = await api.get(`/v1/api/admin/breeds`);
+        const res = await apiClient.get(`/v1/api/admin/breeds`);
 
         const payload = res?.data;
         // Try common shapes: {breeds: []} | {data: []} | []
@@ -163,11 +172,8 @@ export const getAllBreedNames = async (): Promise<string[]> => {
 // -------------------------
 export const addPetListing = async (formData: FormData): Promise<ApiResponse<Pet>> => {
     try {
-        const res = await api.post('/v1/api/seller/pet', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        // Don't set Content-Type manually - axios sets it automatically with boundary for FormData
+        const res = await apiClient.post('/v1/api/seller/pet', formData);
 
         return {
             success: true,
@@ -185,6 +191,40 @@ export const addPetListing = async (formData: FormData): Promise<ApiResponse<Pet
 };
 
 // Note: call getAllBreedNames() from client components or effects when needed.
+
+// -------------------------
+// Update Pet Listing
+// -------------------------
+export const updatePetListing = async (petId: string, formData: FormData): Promise<ApiResponse<Pet>> => {
+    try {
+        console.log('updatePetListing called with petId:', petId);
+        console.log('FormData entries:');
+        for (const [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+
+        // Don't set Content-Type manually - axios sets it automatically with boundary for FormData
+        const res = await apiClient.patch(`/v1/api/seller/pet/${petId}`, formData);
+
+        console.log('Update response:', res.data);
+
+        return {
+            success: true,
+            message: res.data?.message || 'Pet listing updated successfully',
+            data: res.data?.pet || res.data?.data || null,
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+        console.error('updatePetListing error:', err);
+        console.error('Error response:', err.response?.data);
+        return {
+            success: false,
+            message: err?.response?.data?.message || 'Failed to update listing',
+            data: null,
+        };
+    }
+};
+
 // -------------------------
 // Get All Pets (Optional - for listing)
 // -------------------------

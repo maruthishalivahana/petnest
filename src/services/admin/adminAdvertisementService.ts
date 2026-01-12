@@ -257,3 +257,24 @@ export const updateAd = async (adId: string, data: UpdateAdDTO | FormData): Prom
     );
     return response.data.data;
 };
+
+/**
+ * Extend expiration dates for all ads
+ * POST /v1/api/ads/admin/ads/extend-dates
+ * Admin only - extends all ads' end dates by specified number of days
+ * @param days - Number of days to extend the ads by
+ */
+export const extendAdDates = async (days: number): Promise<{ message: string; updatedCount: number }> => {
+    const response = await apiClient.post<{
+        success: boolean;
+        message: string;
+        data: { updatedCount: number }
+    }>(
+        '/v1/api/ads/admin/ads/extend-dates',
+        { days }
+    );
+    return {
+        message: response.data.message,
+        updatedCount: response.data.data.updatedCount
+    };
+};

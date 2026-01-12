@@ -39,13 +39,12 @@ const authSlice = createSlice({
             const normalizedUser = normalizeUser(action.payload.user);
 
             state.user = normalizedUser;
-            state.token = action.payload.token;
+            state.token = action.payload.token; // Just for Redux state, actual auth is in cookie
             state.isAuthenticated = true;
             state.isLoading = false;
 
-            // Persist to localStorage
+            // Only persist user data (not token - it's in HTTP-only cookie)
             if (typeof window !== 'undefined') {
-                localStorage.setItem('token', action.payload.token);
                 localStorage.setItem('user', JSON.stringify(normalizedUser));
             }
         },
@@ -65,9 +64,8 @@ const authSlice = createSlice({
             state.isAuthenticated = false;
             state.isLoading = false;
 
-            // Clear localStorage
+            // Clear localStorage (cookie will be cleared by backend logout endpoint)
             if (typeof window !== 'undefined') {
-                localStorage.removeItem('token');
                 localStorage.removeItem('user');
             }
         },

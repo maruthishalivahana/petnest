@@ -103,18 +103,21 @@ export default function ListingsManagementPage() {
     const [isRequestingFeatured, setIsRequestingFeatured] = useState(false);
     // Removed search and status filter logic
     const safePets = Array.isArray(pets) ? pets : [];
-    // Fetch pets from API
+
+    // Fetch pets from API - always fetch fresh data on mount
     useEffect(() => {
         async function fetchPets() {
             if (user) {
                 setIsLoading(true);
+                console.log('Fetching fresh pet listings...');
                 const petList = await getSellerpets();
                 setPets(Array.isArray(petList) ? petList : []);
                 setIsLoading(false);
             }
         }
         fetchPets();
-    }, [user]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Update URL when filters change to preserve state
     // Removed effect for updating URL with filters
@@ -302,9 +305,11 @@ export default function ListingsManagementPage() {
                                                                 View Details
                                                             </Link>
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem>
-                                                            <Edit className="h-4 w-4 mr-2" />
-                                                            Edit Listing
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/seller/edit-pet/${pet._id}`}>
+                                                                <Edit className="h-4 w-4 mr-2" />
+                                                                Edit Listing
+                                                            </Link>
                                                         </DropdownMenuItem>
                                                         {canRequestFeatured(pet) && (
                                                             <>
@@ -378,9 +383,11 @@ export default function ListingsManagementPage() {
                                                     View Details
                                                 </Link>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem>
-                                                <Edit className="h-4 w-4 mr-2" />
-                                                Edit Listing
+                                            <DropdownMenuItem asChild>
+                                                <Link href={`/seller/edit-pet/${pet._id}`}>
+                                                    <Edit className="h-4 w-4 mr-2" />
+                                                    Edit Listing
+                                                </Link>
                                             </DropdownMenuItem>
                                             {pet.isVerified && (
                                                 <DropdownMenuItem>

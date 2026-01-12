@@ -40,12 +40,29 @@ export function FeaturedPetCard({ pet }: FeaturedPetCardProps) {
         images,
     } = pet;
 
-    // Format location
+    // Format location with JSON string handling
     const formatLocation = () => {
         if (!location) return 'Location not specified';
-        if (typeof location === 'string') return location;
-        const parts = [location.city, location.state].filter(Boolean);
-        return parts.join(', ') || 'Location not specified';
+
+        // Handle string (possibly JSON)
+        if (typeof location === 'string') {
+            try {
+                const parsed = JSON.parse(location);
+                const parts = [parsed.city, parsed.state].filter(Boolean);
+                return parts.join(', ') || 'Location not specified';
+            } catch {
+                // If not JSON, return as is (already formatted)
+                return location;
+            }
+        }
+
+        // Handle object format
+        if (typeof location === 'object' && location !== null) {
+            const parts = [location.city, location.state].filter(Boolean);
+            return parts.join(', ') || 'Location not specified';
+        }
+
+        return 'Location not specified';
     };
 
     // Get image URL with fallback
