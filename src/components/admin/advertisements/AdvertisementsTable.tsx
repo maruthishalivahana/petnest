@@ -43,6 +43,7 @@ import {
     FileX2,
     CheckCircle,
     XCircle,
+    Calendar,
 } from "lucide-react";
 import type { Advertisement, AdListing, AdRequest } from "@/types/advertisement.types";
 import {
@@ -57,9 +58,11 @@ import {
     getAdvertisementsWithFilters,
     getPendingAdRequests,
     getApprovedAdRequests,
+    extendAdDates,
 } from "@/services/admin/adminAdvertisementService";
 import AdDetailsDialog from "./AdDetailsDialog";
 import ConfirmDialog from "./ConfirmDialog";
+import ExtendDatesDialog from "./ExtendDatesDialog";
 
 interface AdvertisementsTableProps {
     type: "pending" | "approved" | "listings";
@@ -95,6 +98,8 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
     const [selectedAd, setSelectedAd] = useState<AdWithMetrics | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [extendDatesOpen, setExtendDatesOpen] = useState(false);
+    const [extendingDates, setExtendingDates] = useState(false);
 
     // Sorting
     const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -363,6 +368,27 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
         }
     };
 
+    const handleExtendDates = async (days: number) => {
+        try {
+            setExtendingDates(true);
+            const result = await extendAdDates(days);
+            toast({
+                title: "Success",
+                description: result.message || `Extended ${result.updatedCount} advertisement(s) by ${days} days`,
+            });
+            setExtendDatesOpen(false);
+            fetchAdvertisements();
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: error.response?.data?.message || "Failed to extend advertisement dates",
+            });
+        } finally {
+            setExtendingDates(false);
+        }
+    };
+
     const handleConfirmAction = async () => {
         if (!confirmDialog) return;
 
@@ -481,7 +507,19 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
     return (
         <div className="space-y-4">
             {/* Toolbar: Actions */}
-            <div className="flex justify-end">
+            <div className="flex justify-between items-center">
+                <div>
+                    {type === "listings" && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setExtendDatesOpen(true)}
+                            className="gap-2"
+                        >
+                            <Calendar className="h-4 w-4" />
+                            Extend Ad Dates
+                        </Button>
+                    )}
+                </div>
                 <Button
                     variant="outline"
                     onClick={() => router.push('/admin/advertisements/create')}
@@ -874,6 +912,13 @@ export default function AdvertisementsTable({ type }: AdvertisementsTableProps) 
                                         ? `Are you sure you want to activate ${selectedIds.size} advertisements?`
                                         : `Are you sure you want to deactivate ${selectedIds.size} advertisements?`
                 }
+            />
+
+            <ExtendDatesDialog
+                open={extendDatesOpen}
+                onOpenChange={setExtendDatesOpen}
+                onConfirm={handleExtendDates}
+                loading={extendingDates}
             />
         </div>
     );

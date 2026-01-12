@@ -28,7 +28,13 @@ apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         // Get current auth state from Redux store
         const state = store.getState();
-        const token = state.auth.token;
+        let token = state.auth.token;
+
+        // Fallback: If token not in Redux, check localStorage
+        // This handles cases where Redux hasn't hydrated yet
+        if (!token && typeof window !== 'undefined') {
+            token = localStorage.getItem('token');
+        }
 
         // Attach Authorization header if token exists
         if (token && config.headers) {

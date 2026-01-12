@@ -9,6 +9,7 @@ import AdMobileSticky from '@/components/landing/AdMobileSticky'
 import BuyerFooter from '@/components/landing/BuyerFooter'
 import { PetCard } from '@/components/landing/PetCard'
 import { FeaturedPetCard } from '@/components/landing/FeaturedPetCard'
+import { BrandCTACard } from '@/components/common/BrandWhatsAppButton'
 import FiltersPanel from '@/components/landing/FiltersPanel'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import axios from 'axios';
@@ -253,9 +254,15 @@ const BuyerHome = () => {
                                     <div className="transition-transform duration-300 hover:-translate-y-1">
                                         <PetCard pet={pet} />
                                     </div>
-                                    {/* Show inline ad after every 3 pets for better visibility */}
-                                    {(index + 1) % 3 === 0 && (
+                                    {/* Show inline ad after every 3 pets */}
+                                    {(index + 1) % 3 === 0 && (index + 1) % 6 !== 0 && (
                                         <AdInline className="col-span-1" />
+                                    )}
+                                    {/* Show Brand CTA after every 6 pets */}
+                                    {(index + 1) % 6 === 0 && (
+                                        <div className="col-span-1 sm:col-span-2 lg:col-span-3">
+                                            <BrandCTACard />
+                                        </div>
                                     )}
                                 </React.Fragment>
                             ))

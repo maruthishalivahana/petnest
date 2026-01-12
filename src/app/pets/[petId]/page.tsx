@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setCurrentPet, setLoading, setPetError, clearCurrentPet } from '@/store/slices/PetSlice';
 import { getPetById } from '@/services/petApi';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
+import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -152,7 +153,7 @@ const PetAttributesGrid = ({ pet }: any) => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SellerInfoCard = ({ seller }: any) => (
+const SellerInfoCard = ({ seller, petId }: any) => (
     <Card className="p-4 md:p-6 bg-card border-border/60 shadow-sm">
         <div className="flex items-center gap-4">
             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
@@ -175,6 +176,18 @@ const SellerInfoCard = ({ seller }: any) => (
         </div>
 
         <Separator className="my-4" />
+
+        {/* WhatsApp Button - Primary CTA */}
+        {seller.id && petId && (
+            <div className="mb-3">
+                <WhatsAppButton
+                    sellerId={seller.id}
+                    petId={petId}
+                    size="lg"
+                    fullWidth
+                />
+            </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
             <Button
@@ -256,10 +269,12 @@ export default function PetDetailsPage() {
             // Handle contact info
             const email = seller.userId?.email;
             const phone = seller.whatsappNumber || seller.userId?.phone;
+            const id = seller._id;
 
-            return { name, location, email, phone };
+            return { id, name, location, email, phone };
         }
         return {
+            id: undefined,
             name: 'Unknown Seller',
             location: formatLocation,
             email: undefined,
@@ -268,8 +283,8 @@ export default function PetDetailsPage() {
     };
     const sellerInfo = getSellerInfo();
 
-    const currencySymbol = currentPet.currency?.toLowerCase() === 'indian' ? '₹' : (currentPet.currency || '₹');
-    const formattedPrice = `${currencySymbol}${(currentPet.price || 0).toLocaleString()}`;
+    // Always use rupee symbol for Indian currency
+    const formattedPrice = `₹${(currentPet.price || 0).toLocaleString()}`;
 
     return (
         <div className="min-h-screen bg-background pb-24 md:pb-12">
@@ -373,7 +388,7 @@ export default function PetDetailsPage() {
                             </div>
 
                             {/* Seller Card */}
-                            <SellerInfoCard seller={sellerInfo} />
+                            <SellerInfoCard seller={sellerInfo} petId={currentPet._id} />
 
                             {/* Desktop Primary Action */}
                             <div className="hidden lg:block p-6 bg-primary/5 rounded-3xl border border-primary/10 space-y-4">

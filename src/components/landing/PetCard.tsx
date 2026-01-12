@@ -4,6 +4,7 @@ import { MapPin, Shield, Calendar, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
+import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -174,10 +175,22 @@ export function PetCard({ pet }: PetCardProps) {
                             </span>
                         </div>
 
-                        {/* Full Width CTA */}
+                        {/* WhatsApp Button - Primary Action */}
+                        {_id && sellerId?._id && (
+                            <WhatsAppButton
+                                sellerId={sellerId._id}
+                                petId={_id}
+                                size="default"
+                                fullWidth
+                                className="h-11 text-sm font-semibold rounded-xl"
+                            />
+                        )}
+
+                        {/* View Details - Secondary Action */}
                         <Button
                             onClick={handleViewDetails}
-                            className="w-full rounded-xl bg-slate-900 text-white shadow-md hover:bg-slate-800 hover:shadow-lg active:scale-[0.98] transition-all dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-200 h-11 text-sm font-semibold"
+                            variant="outline"
+                            className="w-full rounded-xl shadow-sm hover:shadow-md active:scale-[0.98] transition-all h-11 text-sm font-semibold"
                         >
                             View Details
                         </Button>

@@ -69,4 +69,49 @@ const getCurrentSellerDetails = async () => {
     }
 };
 
-export { getSellerPetCount, getSellerpets, getCurrentSellerDetails };
+// Update seller profile with multipart/form-data
+interface UpdateSellerProfileData {
+    brandName?: string;
+    bio?: string;
+    whatsappNumber?: string;
+    location?: {
+        city?: string;
+        state?: string;
+        pincode?: string;
+    };
+    logo?: File;
+}
+
+const updateSellerProfile = async (data: UpdateSellerProfileData) => {
+    try {
+        const formData = new FormData();
+
+        if (data.brandName) formData.append('brandName', data.brandName);
+        if (data.bio) formData.append('bio', data.bio);
+        if (data.whatsappNumber) formData.append('whatsappNumber', data.whatsappNumber);
+
+        if (data.location) {
+            if (data.location.city) formData.append('location[city]', data.location.city);
+            if (data.location.state) formData.append('location[state]', data.location.state);
+            if (data.location.pincode) formData.append('location[pincode]', data.location.pincode);
+        }
+
+        if (data.logo) {
+            formData.append('logo', data.logo);
+        }
+
+        const res = await api.patch(`/v1/api/seller/profile`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+
+        return res.data;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+        console.error('Error updating seller profile:', err);
+        throw err;
+    }
+};
+
+export { getSellerPetCount, getSellerpets, getCurrentSellerDetails, updateSellerProfile };
