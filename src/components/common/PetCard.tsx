@@ -42,9 +42,33 @@ export function PetCard({ pet, showWhatsAppButton = true, className }: PetCardPr
         ? pet.images[0]
         : 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600&q=80';
 
-    const location = pet.location
-        ? [pet.location.city, pet.location.state].filter(Boolean).join(', ')
-        : 'Location not specified';
+    // Robust location formatting to handle both object and string types
+    const formatLocation = () => {
+        if (!pet.location) return 'Location not specified';
+
+        // Handle if location is already a string
+        if (typeof pet.location === 'string') {
+            try {
+                // Try to parse if it's a JSON string
+                const parsed = JSON.parse(pet.location);
+                const parts = [parsed.city, parsed.state].filter(Boolean);
+                return parts.join(', ') || 'Location not specified';
+            } catch {
+                // If not JSON, return as is
+                return pet.location;
+            }
+        }
+
+        // Handle object format
+        if (typeof pet.location === 'object') {
+            const parts = [pet.location.city, pet.location.state].filter(Boolean);
+            return parts.join(', ') || 'Location not specified';
+        }
+
+        return 'Location not specified';
+    };
+
+    const location = formatLocation();
 
     const sellerId = typeof pet.sellerId === 'string'
         ? pet.sellerId
@@ -119,12 +143,18 @@ export function PetCard({ pet, showWhatsAppButton = true, className }: PetCardPr
                 {/* Pet Info */}
                 <div>
                     <h3 className="font-bold text-lg leading-tight line-clamp-1 mb-1">
-                        {pet.name}
+                        {pet.name || 'Unnamed Pet'}
                     </h3>
 
                     {pet.breedName && (
                         <p className="text-sm text-muted-foreground line-clamp-1">
                             {pet.breedName} {pet.age && `• ${pet.age}`}
+                        </p>
+                    )}
+
+                    {!pet.breedName && pet.age && (
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                            {pet.age}
                         </p>
                     )}
 
@@ -135,32 +165,28 @@ export function PetCard({ pet, showWhatsAppButton = true, className }: PetCardPr
                 </div>
 
                 {/* Price and Actions */}
-                <div className="space-y-3 pt-2 border-t">
-                    {/* Price */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t">
                     <div>
-                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Price</p>
-                        <p className="text-2xl font-bold text-primary">
+                        <p className="text-xs text-muted-foreground">Price</p>
+                        <p className="text-xl font-bold text-primary">
                             {formattedPrice}
                         </p>
                     </div>
 
-                    {/* WhatsApp Button */}
-                    {showWhatsAppButton && sellerId && (
+                    {showWhatsAppButton && sellerId ? (
                         <WhatsAppButton
                             sellerId={sellerId}
                             petId={pet._id}
                             size="sm"
-                            fullWidth
                         />
+                    ) : (
+                        <button
+                            onClick={() => router.push(`/pets/${pet._id}`)}
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg active:scale-95"
+                        >
+                            View Details
+                        </button>
                     )}
-
-                    {/* View Details Button */}
-                    <button
-                        onClick={() => router.push(`/pets/${pet._id}`)}
-                        className="w-full rounded-lg bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg active:scale-95"
-                    >
-                        View Details
-                    </button>
                 </div>
             </CardContent>
         </Card>

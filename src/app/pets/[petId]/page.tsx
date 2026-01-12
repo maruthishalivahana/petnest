@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setCurrentPet, setLoading, setPetError, clearCurrentPet } from '@/store/slices/PetSlice';
 import { getPetById } from '@/services/petApi';
+import { formatLocation, getBreedName, getCategory } from '@/utils/petHelpers';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
 import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 import { Button } from '@/components/ui/button';
@@ -102,20 +103,21 @@ const PetHeaderInfo = ({ pet, formattedPrice, formatLocation }: any) => (
     <div className="space-y-4">
         <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-                {/* Use breedId.species.category if available, otherwise fallback to category if it's not an ID, or just 'Pet' */}
+                {/* Use helper function for category */}
                 <Badge variant="secondary" className="text-primary bg-primary/10 hover:bg-primary/15 font-medium px-3">
-                    {pet.breedId?.species?.category || (pet.category && !pet.category.match(/^[0-9a-fA-F]{24}$/) ? pet.category : 'Pet')}
+                    {getCategory(pet)}
                 </Badge>
-                {pet.breedName && (
+                {/* Use helper function for breed name */}
+                {getBreedName(pet) !== 'Unknown Breed' && (
                     <Badge variant="outline" className="text-muted-foreground">
-                        {pet.breedName}
+                        {getBreedName(pet)}
                     </Badge>
                 )}
             </div>
 
             <div className="flex justify-between items-start gap-4">
                 <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-                    {pet.name}
+                    {pet.name || 'Unnamed Pet'}
                 </h1>
                 <div className="text-right">
                     <p className="text-3xl font-bold text-primary whitespace-nowrap">{formattedPrice}</p>
@@ -223,16 +225,29 @@ export default function PetDetailsPage() {
 
     useEffect(() => {
         const fetchPetDetails = async () => {
-            if (!petId) return;
-            if (currentPet && currentPet._id === petId) return;
+            if (!petId) {
+                console.warn('⚠️ No petId provided');
+                return;
+            }
 
+            // Start loading
+            dispatch(clearCurrentPet());
             dispatch(setLoading(true));
-            const response = await getPetById(petId);
 
-            if (response.success && response.data) {
-                dispatch(setCurrentPet(response.data));
-            } else {
-                dispatch(setPetError(response.message));
+            try {
+                // API call with automatic cookie authentication
+                const response = await getPetById(petId);
+
+                if (response.success && response.data) {
+                    console.log('✅ Pet loaded:', response.data.name);
+                    dispatch(setCurrentPet(response.data));
+                } else {
+                    console.error('❌ Failed:', response.message);
+                    dispatch(setPetError(response.message || 'Failed to fetch pet details'));
+                }
+            } catch (error) {
+                console.error('💥 Error:', error);
+                dispatch(setPetError('An unexpected error occurred. Please try again.'));
             }
         };
 
@@ -245,16 +260,8 @@ export default function PetDetailsPage() {
     if (error) return <ErrorView error={error} onBack={() => router.back()} />;
     if (!currentPet) return <ErrorView error="Pet not found" onBack={() => router.back()} />;
 
-    // Helper Logic
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const formatAddress = (loc: any) => {
-        if (!loc) return null;
-        if (typeof loc === 'string') return loc;
-        const parts = [loc.city, loc.state].filter(Boolean); // Shortened for UI clarity
-        return parts.join(', ');
-    };
-
-    const formatLocation = formatAddress(currentPet.location) || 'Location not specified';
+    // Use helper function for location
+    const displayLocation = formatLocation(currentPet.location);
 
     // Seller Logic
     const getSellerInfo = () => {
@@ -263,8 +270,8 @@ export default function PetDetailsPage() {
             // Prioritize brandName if available, then userId.name
             const name = seller.brandName || seller.userId?.name || 'Unknown Seller';
 
-            // Handle location which can be object or string
-            const location = formatAddress(seller.location) || formatLocation;
+            // Handle location which can be object or string (use helper)
+            const location = formatLocation(seller.location) || displayLocation;
 
             // Handle contact info
             const email = seller.userId?.email;
@@ -276,7 +283,7 @@ export default function PetDetailsPage() {
         return {
             id: undefined,
             name: 'Unknown Seller',
-            location: formatLocation,
+            location: displayLocation,
             email: undefined,
             phone: undefined
         };
@@ -318,7 +325,7 @@ export default function PetDetailsPage() {
 
                         {/* Mobile Only Header (Shows below image on mobile, hidden on desktop) */}
                         <div className="block lg:hidden">
-                            <PetHeaderInfo pet={currentPet} formattedPrice={formattedPrice} formatLocation={formatLocation} />
+                            <PetHeaderInfo pet={currentPet} formattedPrice={formattedPrice} formatLocation={displayLocation} />
                             <Separator className="my-6" />
                             <PetAttributesGrid pet={currentPet} />
                         </div>
@@ -381,7 +388,7 @@ export default function PetDetailsPage() {
 
                             {/* Desktop Only Header Info */}
                             <div className="hidden lg:block bg-card rounded-3xl p-6 shadow-sm border border-border/50">
-                                <PetHeaderInfo pet={currentPet} formattedPrice={formattedPrice} formatLocation={formatLocation} />
+                                <PetHeaderInfo pet={currentPet} formattedPrice={formattedPrice} formatLocation={displayLocation} />
                                 <div className="mt-6">
                                     <PetAttributesGrid pet={currentPet} />
                                 </div>
@@ -460,6 +467,11 @@ function DetailSkeleton() {
 }
 
 function ErrorView({ error, onBack }: { error: string, onBack: () => void }) {
+    const router = useRouter();
+    const isAuthError = error.includes('log in') || error.includes('No token') || error.includes('Unauthorized');
+    const isCorsError = error.includes('Connection error') || error.includes('Network Error') || error.includes('ERR_NETWORK');
+    const isConnectionError = error.includes('Failed to fetch') || error.includes('server is running');
+
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
             <div className="text-center space-y-4 max-w-md">
@@ -468,7 +480,55 @@ function ErrorView({ error, onBack }: { error: string, onBack: () => void }) {
                 </div>
                 <h3 className="text-xl font-bold">Something went wrong</h3>
                 <p className="text-muted-foreground">{error}</p>
-                <Button onClick={onBack}>Go Back</Button>
+
+                {isAuthError && (
+                    <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg text-sm">
+                        <p className="text-blue-800 dark:text-blue-200 mb-3">
+                            You need to be logged in to view pet details.
+                        </p>
+                        <Button
+                            onClick={() => router.push('/login')}
+                            className="w-full"
+                        >
+                            Go to Login
+                        </Button>
+                    </div>
+                )}
+
+                {(isCorsError || isConnectionError) && !isAuthError && (
+                    <div className="bg-yellow-50 dark:bg-yellow-950/20 p-4 rounded-lg text-sm text-left">
+                        <p className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                            {isCorsError ? '🔌 Connection Issue Detected' : 'Possible causes:'}
+                        </p>
+                        <ul className="list-disc list-inside space-y-1 text-yellow-700 dark:text-yellow-300">
+                            {isCorsError && (
+                                <>
+                                    <li>Backend CORS not configured properly</li>
+                                    <li>Authentication token missing or expired</li>
+                                    <li>Browser blocking the request</li>
+                                </>
+                            )}
+                            {!isCorsError && (
+                                <>
+                                    <li>Backend server is not running</li>
+                                    <li>Wrong API URL configured</li>
+                                    <li>Network connection issue</li>
+                                </>
+                            )}
+                        </ul>
+                        <div className="mt-3 p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded text-xs">
+                            <p className="font-medium mb-1">💡 Quick fixes:</p>
+                            <p>1. Make sure you&apos;re logged in</p>
+                            <p>2. Check if backend is running on port 8080</p>
+                            <p>3. Clear browser cache and cookies</p>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex gap-3 justify-center">
+                    <Button onClick={onBack} variant="outline">Go Back</Button>
+                    {!isAuthError && <Button onClick={() => window.location.reload()}>Retry</Button>}
+                </div>
             </div>
         </div>
     );

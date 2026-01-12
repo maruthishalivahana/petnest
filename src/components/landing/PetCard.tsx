@@ -54,12 +54,28 @@ export function PetCard({ pet }: PetCardProps) {
         currency = '₹',
     } = pet;
 
-    // --- Logic Preservation (Untouched) ---
+    // --- Logic Preservation with Enhancement ---
     const formatLocation = () => {
-        if (location) {
-            const parts = [location.city, location.state].filter(Boolean); // Shortened for UI card
+        if (!location) return 'Location not specified';
+
+        // Handle if location is a string (possibly JSON)
+        if (typeof location === 'string') {
+            try {
+                const parsed = JSON.parse(location);
+                const parts = [parsed.city, parsed.state].filter(Boolean);
+                return parts.join(', ') || 'Location not specified';
+            } catch {
+                // If not JSON, return as is (already formatted string)
+                return location;
+            }
+        }
+
+        // Handle object format
+        if (typeof location === 'object' && location !== null) {
+            const parts = [location.city, location.state].filter(Boolean);
             return parts.join(', ') || 'Location not specified';
         }
+
         return 'Location not specified';
     };
 

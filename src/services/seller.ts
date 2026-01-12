@@ -1,17 +1,7 @@
 import { setPets } from '@/store/slices/PetSlice';
-import axios from 'axios';
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
-// -------------------------
+import apiClient from '@/lib/apiClient';
 
-
-
-const api = axios.create({
-    baseURL: BASE_URL,
-    withCredentials: true,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-})
+const api = apiClient;
 
 
 // get seller pet count
@@ -41,6 +31,38 @@ const getSellerpets = async () => {
         console.error('Error fetching seller pets:', error);
         return [];
 
+    }
+}
+
+// Get single seller pet by ID
+const getSellerPetById = async (petId: string) => {
+    try {
+        console.log('Calling API: GET /v1/api/seller/pet/' + petId);
+        const res = await api.get(`/v1/api/seller/pet/${petId}`);
+        console.log('API Response status:', res.status);
+        console.log('API Response data:', res.data);
+
+        const pet = res.data?.pet || res.data?.data || res.data;
+
+        if (!pet) {
+            console.log('Pet not found for seller with ID:', petId);
+            return null;
+        }
+
+        console.log('Seller pet fetched successfully:', pet);
+        return pet;
+    } catch (error: any) {
+        console.error('Error fetching seller pet:', error);
+        console.error('Error response:', error.response?.data);
+        console.error('Error status:', error.response?.status);
+        console.error('Error message:', error.message);
+
+        // Check if it's an authentication issue
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            console.error('Authentication/Authorization error - Token may be invalid or user may not be a seller');
+        }
+
+        throw error; // Re-throw to let the caller handle it
     }
 }
 
@@ -114,4 +136,4 @@ const updateSellerProfile = async (data: UpdateSellerProfileData) => {
     }
 };
 
-export { getSellerPetCount, getSellerpets, getCurrentSellerDetails, updateSellerProfile };
+export { getSellerPetCount, getSellerpets, getSellerPetById, getCurrentSellerDetails, updateSellerProfile };

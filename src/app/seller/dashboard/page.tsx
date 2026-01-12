@@ -42,10 +42,10 @@ export default function SellerDashboardPage() {
     }, [user]);
 
     const stats = [
-        { title: 'Total Listings', value: isLoading ? '...' : String(petCount), icon: Store, trend: { value: 8.2, isPositive: true } },
-        { title: 'Total Views', value: '2,847', icon: Eye, trend: { value: 12.5, isPositive: true } },
-        { title: 'Wishlist Saves', value: '89', icon: Heart, trend: { value: -3.1, isPositive: false } },
-        { title: 'WhatsApp Clicks', value: '45', icon: MessageCircle, trend: { value: 18.2, isPositive: true } },
+        { title: 'Total Listings', value: isLoading ? '...' : String(petCount), icon: Store, trend: { value: 0, isPositive: true } },
+        { title: 'Total Views', value: 0, icon: Eye, trend: { value: 0, isPositive: true } },
+        { title: 'Wishlist Saves', value: 0, icon: Heart, trend: { value: 0, isPositive: true } },
+        { title: 'WhatsApp Clicks', value: 0, icon: MessageCircle, trend: { value: 0, isPositive: true } },
     ];
 
     return (

@@ -55,12 +55,16 @@ export default function FeedPage() {
     const [loadingMore, setLoadingMore] = useState(false);
 
     useEffect(() => {
+        // Always fetch fresh data on mount to ensure updates are reflected
+        setPage(1);
+        setHasMore(true);
         fetchFeed();
 
         // Cleanup on unmount
         return () => {
             adTracker.reset();
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchFeed = async (pageNum = 1) => {

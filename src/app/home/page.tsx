@@ -12,7 +12,7 @@ import { FeaturedPetCard } from '@/components/landing/FeaturedPetCard'
 import { BrandCTACard } from '@/components/common/BrandWhatsAppButton'
 import FiltersPanel from '@/components/landing/FiltersPanel'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
-import axios from 'axios';
+import apiClient from '@/lib/apiClient';
 import { useState, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setPets, setIsSearching } from '@/store/slices/PetSlice'
@@ -28,7 +28,6 @@ const BuyerHome = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [featuredPets, setFeaturedPets] = useState<FeaturedPet[]>([]);
-    const BaseURL = process.env.NEXT_PUBLIC_BASE_URL;
     const searchParams = useSearchParams();
 
     // Get search and filter parameters from URL
@@ -93,9 +92,7 @@ const BuyerHome = () => {
             } else if (category || gender || age || minPrice || maxPrice) {
                 // Fetch all pets and apply filters client-side
                 dispatch(setIsSearching(false));
-                const response = await axios.get(`${BaseURL}/v1/api/buyer/pets`, {
-                    withCredentials: true
-                });
+                const response = await apiClient.get('/v1/api/buyer/pets');
 
                 let filteredPets = response.data.pets || [];
 
@@ -129,11 +126,10 @@ const BuyerHome = () => {
             } else {
                 // Fetch all pets when no search/filters
                 dispatch(setIsSearching(false));
-                const response = await axios.get(`${BaseURL}/v1/api/buyer/pets`, {
-                    withCredentials: true
-                });
+                const response = await apiClient.get('/v1/api/buyer/pets');
 
                 const data = response.data.pets;
+                console.log('✅ Pets loaded:', data?.length || 0);
                 dispatch(setPets(data || []));
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,6 +142,7 @@ const BuyerHome = () => {
     }
 
     useEffect(() => {
+        // Always fetch fresh data to ensure updates are reflected
         // Only show loading if no cached pets to prevent layout shift on re-renders
         if (!pets || pets.length === 0) {
             setLoading(true);
@@ -153,6 +150,12 @@ const BuyerHome = () => {
         fetchPets();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchQuery, category, gender, age, minPrice, maxPrice]); // Refetch when any parameter changes
+
+    // Force refresh on component mount to ensure fresh data
+    useEffect(() => {
+        fetchPets();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="min-h-screen bg-slate-50/80 font-sans text-slate-900">
