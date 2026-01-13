@@ -54,9 +54,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
                     if (!isMounted) return;
 
                     const loggedUser = res.data.user;
-                    const token = localStorage.getItem('token') || '';
 
-                    dispatch(setCredentials({ user: loggedUser, token }));
+                    dispatch(setCredentials({ user: loggedUser, token: 'cookie-auth' }));
 
                     // Check access after setting credentials
                     if (allowedRoles && !allowedRoles.includes(loggedUser.role)) {

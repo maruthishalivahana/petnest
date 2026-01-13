@@ -9,6 +9,17 @@ const fileListSchema = z
         'Only image files are allowed'
     );
 
+// Optional file list schema for edit mode
+const optionalFileListSchema = z
+    .custom<FileList>((value) => !value || value instanceof FileList, {
+        message: 'Invalid file list',
+    })
+    .optional()
+    .refine(
+        (files) => !files || files.length === 0 || Array.from(files).every((file) => file.type?.startsWith('image/')),
+        'Only image files are allowed'
+    );
+
 export const petListingSchema = z.object({
     name: z.string().min(2, 'Pet name must be at least 2 characters'),
     breedName: z.string().min(1, 'Please select a breed'),
@@ -28,4 +39,25 @@ export const petListingSchema = z.object({
     images: fileListSchema,
 });
 
+// Schema for editing pet listing - images are optional
+export const editPetListingSchema = z.object({
+    name: z.string().min(2, 'Pet name must be at least 2 characters'),
+    breedName: z.string().min(1, 'Please select a breed'),
+    gender: z.enum(['male', 'female'], {
+        message: 'Please select gender',
+    }),
+    age: z.coerce.number().positive('Age must be a positive number'),
+    price: z.coerce.number().positive('Price must be a positive number'),
+    currency: z.enum(['INR', 'USD']).default('INR'),
+    location: z.object({
+        city: z.string().min(1, 'City is required'),
+        state: z.string().min(1, 'State is required'),
+        pincode: z.string().regex(/^\d{6}$/, 'Pincode must be exactly 6 digits'),
+    }),
+    vaccinationInfo: z.string().optional(),
+    description: z.string().min(10, 'Description must be at least 10 characters'),
+    images: optionalFileListSchema,
+});
+
 export type PetListingFormData = z.infer<typeof petListingSchema>;
+export type EditPetListingFormData = z.infer<typeof editPetListingSchema>;

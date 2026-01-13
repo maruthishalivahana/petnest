@@ -12,16 +12,17 @@ export function ReduxProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         // Restore session from localStorage on mount (client-side only)
+        // Note: Token is in HTTP-only cookie, we only restore user data
         if (!initialized.current && typeof window !== 'undefined') {
             initialized.current = true;
 
             try {
-                const token = localStorage.getItem('token');
                 const userStr = localStorage.getItem('user');
 
-                if (token && userStr) {
+                if (userStr) {
                     const user = JSON.parse(userStr);
-                    storeRef.current.dispatch(restoreSession({ user, token }));
+                    // Use dummy token since real auth is in cookie
+                    storeRef.current.dispatch(restoreSession({ user, token: 'cookie-auth' }));
                 } else {
                     // No session to restore
                     storeRef.current.dispatch(restoreSession(null));

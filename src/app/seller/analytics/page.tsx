@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/seller/StatCard';
+import { WhatsAppAnalytics } from '@/components/seller/WhatsAppAnalytics';
 import {
     Eye,
     Heart,
@@ -9,124 +11,104 @@ import {
     TrendingUp,
     Users,
     ArrowUpRight,
-    Calendar
+    Calendar,
+    RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import apiClient from '@/lib/apiClient';
+import { useToast } from '@/hooks/use-toast';
+import { useAppSelector } from '@/store/hooks';
 
-const stats = [
-    { title: 'Total Views', value: '12,847', icon: Eye, trend: { value: 23.5, isPositive: true }, description: 'Last 30 days' },
-    { title: 'Wishlist Saves', value: '342', icon: Heart, trend: { value: -5.2, isPositive: false }, description: 'Last 30 days' },
-    { title: 'WhatsApp Clicks', value: '156', icon: MessageCircle, trend: { value: 45.8, isPositive: true }, description: 'Last 30 days' },
-    { title: 'Profile Views', value: '2,456', icon: Users, trend: { value: 12.3, isPositive: true }, description: 'Last 30 days' },
-];
-
-const topPerformingListings = [
-    { name: 'Golden Retriever Puppy', views: 2456, clicks: 89, wishlistCount: 45 },
-    { name: 'Persian Cat', views: 1834, clicks: 67, wishlistCount: 34 },
-    { name: 'Beagle Puppy', views: 1567, clicks: 56, wishlistCount: 28 },
-    { name: 'Labrador Retriever', views: 1234, clicks: 45, wishlistCount: 23 },
-    { name: 'Siamese Cat', views: 987, clicks: 34, wishlistCount: 18 },
-];
+interface SellerAnalyticsData {
+    totalWhatsappClicks: number;
+    pets: Array<{
+        _id: string;
+        name: string;
+        whatsappClicks: number;
+    }>;
+}
 
 export default function AnalyticsPage() {
+    const { toast } = useToast();
+    const { user } = useAppSelector((state) => state.auth);
+    const [whatsappAnalytics, setWhatsappAnalytics] = useState<SellerAnalyticsData | null>(null);
+    const [loadingWhatsApp, setLoadingWhatsApp] = useState(true);
+
+    const fetchWhatsAppAnalytics = async () => {
+        try {
+            setLoadingWhatsApp(true);
+            const response = await apiClient.get('/v1/api/seller/analytics/whatsapp');
+            setWhatsappAnalytics(response.data.data);
+        } catch (error: any) {
+            console.error('Failed to fetch WhatsApp analytics:', error);
+        } finally {
+            setLoadingWhatsApp(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.role === 'seller') {
+            fetchWhatsAppAnalytics();
+        }
+    }, [user]);
+
     return (
         <div className="space-y-6">
             {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Analytics & Insights</h2>
+                    <p className="text-slate-500 mt-1">Track your performance and optimize your listings</p>
+                </div>
+                <Button onClick={fetchWhatsAppAnalytics} variant="outline" size="sm">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                </Button>
+            </div>
+
+            {/* Date Range Selector - Coming Soon */}
+            <Card className="p-8 bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200">
+                <div className="text-center">
+                    <Calendar className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-900 mb-2">General Analytics Coming Soon</h3>
+                    <p className="text-sm text-slate-500">
+                        Views, wishlist saves, and engagement metrics will be available soon
+                    </p>
+                </div>
+            </Card>
+
+            {/* WhatsApp Analytics Section */}
             <div>
-                <h2 className="text-2xl font-bold text-slate-900">Analytics & Insights</h2>
-                <p className="text-slate-500 mt-1">Track your performance and optimize your listings</p>
-            </div>
-
-                {/* Date Range Selector */}
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Last 30 Days
-                    </Button>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {stats.map((stat) => (
-                        <StatCard key={stat.title} {...stat} />
-                    ))}
-                </div>
-
-                {/* Charts Placeholder */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <Card className="p-6">
-                        <h3 className="font-semibold text-slate-900 mb-4">Views Over Time</h3>
-                        <div className="h-64 flex items-center justify-center bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                            <div className="text-center">
-                                <TrendingUp className="h-12 w-12 text-slate-300 mx-auto mb-2" />
-                                <p className="text-sm text-slate-500">Chart visualization</p>
-                            </div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-4">WhatsApp Engagement</h3>
+                {loadingWhatsApp ? (
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <Skeleton className="h-32" />
+                            <Skeleton className="h-32" />
+                            <Skeleton className="h-32" />
+                        </div>
+                        <Skeleton className="h-96" />
+                    </div>
+                ) : whatsappAnalytics ? (
+                    <WhatsAppAnalytics
+                        totalClicks={whatsappAnalytics.totalWhatsappClicks}
+                        petAnalytics={whatsappAnalytics.pets.map(pet => ({
+                            petId: pet._id,
+                            petName: pet.name,
+                            whatsappClicks: pet.whatsappClicks || 0
+                        }))}
+                    />
+                ) : (
+                    <Card>
+                        <div className="p-12 text-center text-muted-foreground">
+                            <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>No WhatsApp analytics data available</p>
                         </div>
                     </Card>
-
-                    <Card className="p-6">
-                        <h3 className="font-semibold text-slate-900 mb-4">Engagement Breakdown</h3>
-                        <div className="h-64 flex items-center justify-center bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                            <div className="text-center">
-                                <TrendingUp className="h-12 w-12 text-slate-300 mx-auto mb-2" />
-                                <p className="text-sm text-slate-500">Chart visualization</p>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-
-                {/* Top Performing Listings */}
-                <Card>
-                    <div className="p-6 border-b border-slate-200">
-                        <h3 className="font-semibold text-slate-900">Top Performing Listings</h3>
-                    </div>
-                    <div className="divide-y divide-slate-200">
-                        {topPerformingListings.map((listing, index) => (
-                            <div key={listing.name} className="p-6 hover:bg-slate-50 transition-colors">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                        <span className="font-bold text-primary">#{index + 1}</span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-medium text-slate-900 truncate">{listing.name}</h4>
-                                        <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
-                                            <span className="flex items-center gap-1">
-                                                <Eye className="h-4 w-4" />
-                                                {listing.views} views
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Heart className="h-4 w-4" />
-                                                {listing.wishlistCount} saves
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <MessageCircle className="h-4 w-4" />
-                                                {listing.clicks} clicks
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <ArrowUpRight className="h-5 w-5 text-green-600" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </Card>
-
-                {/* Insights */}
-                <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-                    <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                            <TrendingUp className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-slate-900 mb-1">Pro Tip</h3>
-                            <p className="text-sm text-slate-600">
-                                Listings with high-quality images and detailed descriptions get 3x more inquiries.
-                                Consider adding more photos and health certificates to boost engagement.
-                            </p>
-                        </div>
-                    </div>
-                </Card>
+                )}
             </div>
+        </div>
 
     );
 }

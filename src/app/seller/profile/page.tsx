@@ -18,10 +18,11 @@ import {
     Save,
     Loader2
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCurrentSellerDetails } from '@/services/seller';
+import { getCurrentSellerDetails, updateSellerProfile } from '@/services/seller';
+import { useToast } from '@/hooks/use-toast';
 
 interface SellerDetails {
     _id: string;
@@ -55,11 +56,26 @@ interface SellerDetails {
 
 export default function SellerProfilePage() {
     const { user, isLoading: authLoading } = useAuth();
+    const { toast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [sellerDetails, setSellerDetails] = useState<SellerDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const logoInputRef = useRef<HTMLInputElement>(null);
     const profileCompletion = 75;
+
+    // Form state
+    const [formData, setFormData] = useState({
+        brandName: '',
+        bio: '',
+        whatsappNumber: '',
+        city: '',
+        state: '',
+        pincode: ''
+    });
 
     useEffect(() => {
         const fetchSellerDetails = async () => {
@@ -81,6 +97,14 @@ export default function SellerProfilePage() {
                 const data = await getCurrentSellerDetails();
                 console.log('Seller details fetched:', data);
                 setSellerDetails(data);
+                setFormData({
+                    brandName: data.brandName || '',
+                    bio: data.bio || '',
+                    whatsappNumber: data.whatsappNumber || '',
+                    city: data.location?.city || '',
+                    state: data.location?.state || '',
+                    pincode: data.location?.pincode || ''
+                });
                 setError(null);
             } catch (err) {
                 setError('Failed to load seller details');
@@ -91,6 +115,94 @@ export default function SellerProfilePage() {
 
         fetchSellerDetails();
     }, [user, authLoading]);
+
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                toast({
+                    variant: 'destructive',
+                    title: 'File too large',
+                    description: 'Please select an image under 5MB'
+                });
+                return;
+            }
+
+            setLogoFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setLogoPreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleFormChange = (field: string, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleSaveProfile = async () => {
+        setIsSaving(true);
+        try {
+            const updateData: any = {
+                brandName: formData.brandName,
+                bio: formData.bio,
+                whatsappNumber: formData.whatsappNumber,
+                location: {
+                    city: formData.city,
+                    state: formData.state,
+                    pincode: formData.pincode
+                }
+            };
+
+            if (logoFile) {
+                updateData.logo = logoFile;
+            }
+
+            const response = await updateSellerProfile(updateData);
+
+            if (response.data) {
+                setSellerDetails(response.data);
+                setIsEditing(false);
+                setLogoFile(null);
+                setLogoPreview(null);
+
+                toast({
+                    title: 'Success',
+                    description: 'Profile updated successfully'
+                });
+            }
+        } catch (error: any) {
+            console.error('Profile update error:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.response?.data?.message || 'Failed to update profile'
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setLogoFile(null);
+        setLogoPreview(null);
+        // Reset form data to original seller details
+        if (sellerDetails) {
+            setFormData({
+                brandName: sellerDetails.brandName || '',
+                bio: sellerDetails.bio || '',
+                whatsappNumber: sellerDetails.whatsappNumber || '',
+                city: sellerDetails.location?.city || '',
+                state: sellerDetails.location?.state || '',
+                pincode: sellerDetails.location?.pincode || ''
+            });
+        }
+    };
 
     if (authLoading || isLoading) {
         return (
@@ -175,23 +287,41 @@ export default function SellerProfilePage() {
                 <div className="p-6 border-b border-slate-200">
                     <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-slate-900">Profile Information</h3>
-                        <Button
-                            variant={isEditing ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setIsEditing(!isEditing)}
-                        >
-                            {isEditing ? (
-                                <>
-                                    <Save className="h-4 w-4 mr-2" />
-                                    Save Changes
-                                </>
-                            ) : (
-                                <>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit Profile
-                                </>
+                        <div className="flex gap-2">
+                            {isEditing && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCancelEdit}
+                                    disabled={isSaving}
+                                >
+                                    Cancel
+                                </Button>
                             )}
-                        </Button>
+                            <Button
+                                variant={isEditing ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={isEditing ? handleSaveProfile : () => setIsEditing(true)}
+                                disabled={isSaving}
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : isEditing ? (
+                                    <>
+                                        <Save className="h-4 w-4 mr-2" />
+                                        Save Changes
+                                    </>
+                                ) : (
+                                    <>
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit Profile
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -203,7 +333,14 @@ export default function SellerProfilePage() {
                         </Label>
                         <div className="flex items-center gap-4">
                             <div className="h-20 w-20 rounded-lg bg-slate-100 overflow-hidden relative">
-                                {sellerDetails?.documents?.shopImage ? (
+                                {logoPreview ? (
+                                    <Image
+                                        src={logoPreview}
+                                        alt="Logo Preview"
+                                        fill
+                                        className="object-cover"
+                                    />
+                                ) : sellerDetails?.documents?.shopImage ? (
                                     <Image
                                         src={sellerDetails.documents.shopImage}
                                         alt="Brand Logo"
@@ -217,10 +354,27 @@ export default function SellerProfilePage() {
                                     </div>
                                 )}
                             </div>
-                            <Button variant="outline" size="sm" disabled={!isEditing}>
+                            <input
+                                ref={logoInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleLogoChange}
+                                className="hidden"
+                            />
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!isEditing}
+                                onClick={() => logoInputRef.current?.click()}
+                            >
                                 <Upload className="h-4 w-4 mr-2" />
-                                Upload New Logo
+                                {logoFile ? 'Change Logo' : 'Upload New Logo'}
                             </Button>
+                            {logoFile && (
+                                <span className="text-sm text-green-600">
+                                    {logoFile.name}
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -232,7 +386,8 @@ export default function SellerProfilePage() {
                                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                 <Input
                                     id="brandName"
-                                    defaultValue={sellerDetails?.brandName || ''}
+                                    value={formData.brandName}
+                                    onChange={(e) => handleFormChange('brandName', e.target.value)}
                                     placeholder="Enter brand name"
                                     disabled={!isEditing}
                                     className="pl-10"
@@ -248,10 +403,11 @@ export default function SellerProfilePage() {
                                     id="ownerName"
                                     defaultValue={sellerDetails?.userId?.name || user?.name || ''}
                                     placeholder="Enter owner name"
-                                    disabled={!isEditing}
-                                    className="pl-10"
+                                    disabled
+                                    className="pl-10 bg-slate-50"
                                 />
                             </div>
+                            <p className="text-xs text-slate-500">Owner name cannot be changed here</p>
                         </div>
 
                         <div className="space-y-2">
@@ -263,10 +419,11 @@ export default function SellerProfilePage() {
                                     type="email"
                                     defaultValue={sellerDetails?.userId?.email || user?.email || ''}
                                     placeholder="Enter email"
-                                    disabled={!isEditing}
-                                    className="pl-10"
+                                    disabled
+                                    className="pl-10 bg-slate-50"
                                 />
                             </div>
+                            <p className="text-xs text-slate-500">Email cannot be changed here</p>
                         </div>
 
                         <div className="space-y-2">
@@ -275,26 +432,54 @@ export default function SellerProfilePage() {
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                 <Input
                                     id="whatsapp"
-                                    defaultValue={sellerDetails?.whatsappNumber || ''}
-                                    placeholder="Enter WhatsApp number"
+                                    value={formData.whatsappNumber}
+                                    onChange={(e) => handleFormChange('whatsappNumber', e.target.value)}
+                                    placeholder="+91 9876543210"
                                     disabled={!isEditing}
                                     className="pl-10"
                                 />
                             </div>
                         </div>
 
-                        <div className="space-y-2 md:col-span-2">
-                            <Label htmlFor="location">Location</Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="city">City</Label>
                             <div className="relative">
                                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                 <Input
-                                    id="location"
-                                    defaultValue={
-                                        sellerDetails?.location
-                                            ? `${sellerDetails.location.city || ''}, ${sellerDetails.location.state || ''} ${sellerDetails.location.pincode || ''}`.trim()
-                                            : ''
-                                    }
-                                    placeholder="Enter location"
+                                    id="city"
+                                    value={formData.city}
+                                    onChange={(e) => handleFormChange('city', e.target.value)}
+                                    placeholder="Enter city"
+                                    disabled={!isEditing}
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="state">State</Label>
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input
+                                    id="state"
+                                    value={formData.state}
+                                    onChange={(e) => handleFormChange('state', e.target.value)}
+                                    placeholder="Enter state"
+                                    disabled={!isEditing}
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="pincode">Pincode</Label>
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input
+                                    id="pincode"
+                                    value={formData.pincode}
+                                    onChange={(e) => handleFormChange('pincode', e.target.value)}
+                                    placeholder="400001"
                                     disabled={!isEditing}
                                     className="pl-10"
                                 />
@@ -307,7 +492,8 @@ export default function SellerProfilePage() {
                                 id="bio"
                                 rows={4}
                                 disabled={!isEditing}
-                                defaultValue={sellerDetails?.bio || ''}
+                                value={formData.bio}
+                                onChange={(e) => handleFormChange('bio', e.target.value)}
                                 placeholder="Tell us about your business"
                                 className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
                             />

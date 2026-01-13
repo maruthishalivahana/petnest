@@ -71,10 +71,7 @@ export default function SellerVerificationPage() {
             setIsLoading(true);
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8080';
             const response = await axios.get(`${baseUrl}/v1/api/seller/status`, {
-                withCredentials: true,
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
+                withCredentials: true
             });
 
             const status = response.data.data || response.data;
@@ -179,8 +176,7 @@ export default function SellerVerificationPage() {
                 formData,
                 {
                     headers: {
-                        'Content-Type': 'multipart/form-data',
-                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                        'Content-Type': 'multipart/form-data'
                     },
                     withCredentials: true
                 }

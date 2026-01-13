@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
@@ -94,10 +94,16 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
     const dispatch = useAppDispatch();
     const { user } = useAppSelector((state) => state.auth);
+
+    // Prevent hydration mismatch by only showing user data after mount
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const handleLogout = () => {
         dispatch(logout());
@@ -183,14 +189,14 @@ export default function AdminLayout({
                 <div className="p-4 border-t border-gray-200">
                     <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
                         <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-                            {user?.name?.charAt(0).toUpperCase() || 'A'}
+                            {mounted && user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">
-                                {user?.name || 'Admin User'}
+                                {mounted && user?.name ? user.name : 'Admin User'}
                             </p>
                             <p className="text-xs text-gray-500 truncate">
-                                {user?.email || 'admin@petnest.com'}
+                                {mounted && user?.email ? user.email : 'admin@petnest.com'}
                             </p>
                         </div>
                     </div>

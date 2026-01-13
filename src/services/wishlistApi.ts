@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+import apiClient from "@/lib/apiClient";
 
 // -------------------------
 // Types
@@ -35,22 +33,11 @@ interface ApiResponse<T = any> {
 }
 
 // -------------------------
-// Base Axios Config
-// -------------------------
-const api = axios.create({
-    baseURL: BASE_URL,
-    withCredentials: true,
-    headers: {
-        "Content-Type": "application/json",
-    },
-});
-
-// -------------------------
 // Add to Wishlist
 // -------------------------
 export const addToWishlist = async (petId: string): Promise<ApiResponse> => {
     try {
-        const res = await api.post(`/v1/api/buyer/wishlist/${petId}`, {});
+        const res = await apiClient.post(`/v1/api/buyer/wishlist/${petId}`, {});
 
         return {
             success: true,
@@ -72,7 +59,7 @@ export const addToWishlist = async (petId: string): Promise<ApiResponse> => {
 // -------------------------
 export const removeFromWishlist = async (petId: string): Promise<ApiResponse> => {
     try {
-        const res = await api.delete(`/v1/api/buyer/wishlist/${petId}`);
+        const res = await apiClient.delete(`/v1/api/buyer/wishlist/${petId}`);
 
         return {
             success: true,
@@ -94,7 +81,7 @@ export const removeFromWishlist = async (petId: string): Promise<ApiResponse> =>
 // -------------------------
 export const getWishlistItems = async (): Promise<WishlistItem[]> => {
     try {
-        const res = await api.get(`/v1/api/buyer/wishlist`);
+        const res = await apiClient.get(`/v1/api/buyer/wishlist`);
 
         console.log('Raw API response:', res.data);
         console.log('Response keys:', Object.keys(res.data || {}));
@@ -184,6 +171,14 @@ export const getWishlistItems = async (): Promise<WishlistItem[]> => {
     } catch (err: any) {
         console.error("Wishlist Fetch Error:", err);
         console.error("Error response:", err?.response?.data);
+
+        // Handle 403 (Forbidden) - user is not a buyer or not authorized
+        if (err?.response?.status === 403) {
+            console.warn("⚠️ User not authorized to access wishlist (not a buyer)");
+            return []; // Return empty array instead of throwing
+        }
+
+        // For other errors, throw
         throw new Error(
             err?.response?.data?.message || "Failed to fetch wishlist items"
         );
@@ -195,7 +190,7 @@ export const getWishlistItems = async (): Promise<WishlistItem[]> => {
 // -------------------------
 export const checkWishlist = async (petId: string): Promise<boolean> => {
     try {
-        const res = await api.get(`/v1/api/buyer/wishlist/check/${petId}`);
+        const res = await apiClient.get(`/v1/api/buyer/wishlist/check/${petId}`);
 
         // Normalize response - backend might return different formats
         return res.data?.isWishlisted || res.data?.data?.isWishlisted || false;

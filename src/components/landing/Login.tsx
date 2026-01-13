@@ -40,25 +40,29 @@ const Login = () => {
             setIsLoading(true);
 
             const response = await axios.post(`${url}/v1/api/auth/login`, values, {
-                withCredentials: true,
+                withCredentials: true, // Required for cookies
             });
 
-            const { user, token } = response.data;
+            const { user } = response.data;
 
-            // Save user data and token using Redux
-            dispatch(setCredentials({ user, token }));
+            // Save user data (token is in HTTP-only cookie, don't store it)
+            // Note: We still need to provide a dummy token for Redux compatibility
+            dispatch(setCredentials({ user, token: 'cookie-auth' }));
 
-            console.log("Login successful:", user);
+            console.log("✅ Login successful:", user.email);
 
             // Fetch wishlist before redirecting (important for showing filled hearts)
-            try {
-                console.log('🔄 [Login Component] Fetching wishlist...');
-                const wishlistItems = await getWishlistItems();
-                console.log('✅ [Login Component] Wishlist fetched:', wishlistItems.length, 'items');
-                dispatch(setWishlistItems({ items: wishlistItems, userId: user.id || user._id }));
-            } catch (wishlistError) {
-                console.error('❌ [Login Component] Failed to fetch wishlist:', wishlistError);
-                // Continue with login even if wishlist fails
+            // Only fetch for buyers
+            if (user.role === 'buyer') {
+                try {
+                    console.log('🔄 [Login Component] Fetching wishlist...');
+                    const wishlistItems = await getWishlistItems();
+                    console.log('✅ [Login Component] Wishlist fetched:', wishlistItems.length, 'items');
+                    dispatch(setWishlistItems({ items: wishlistItems, userId: user.id || user._id }));
+                } catch (wishlistError) {
+                    console.error('❌ [Login Component] Failed to fetch wishlist:', wishlistError);
+                    // Continue with login even if wishlist fails
+                }
             }
 
             toast.success('Login successful!');            // Get redirect path from query params or use role-based default route

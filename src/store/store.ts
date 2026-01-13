@@ -25,7 +25,7 @@ import { authMiddleware } from './middleware/authMiddleware';
 const persistConfig = {
     key: 'root',
     storage,
-    whitelist: ['wishlist'], // Add 'auth' if you want to persist auth
+    whitelist: ['auth', 'wishlist'], // Persist both auth and wishlist
 };
 
 // Combine all reducers
