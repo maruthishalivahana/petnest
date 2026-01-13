@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAppSelector } from '@/store/hooks';
 import { getCurrentSellerDetails, updateSellerProfile } from '@/services/seller';
 import { useToast } from '@/hooks/use-toast';
 
@@ -55,7 +55,8 @@ interface SellerDetails {
 }
 
 export default function SellerProfilePage() {
-    const { user, isLoading: authLoading } = useAuth();
+    const user = useAppSelector((state) => state.auth.user);
+    const isAuthLoading = useAppSelector((state) => state.auth.isLoading);
     const { toast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [sellerDetails, setSellerDetails] = useState<SellerDetails | null>(null);
@@ -80,7 +81,7 @@ export default function SellerProfilePage() {
     useEffect(() => {
         const fetchSellerDetails = async () => {
             // Wait for auth to finish loading
-            if (authLoading) {
+            if (isAuthLoading) {
                 return;
             }
 
@@ -114,7 +115,7 @@ export default function SellerProfilePage() {
         };
 
         fetchSellerDetails();
-    }, [user, authLoading]);
+    }, [user, isAuthLoading]);
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -204,7 +205,7 @@ export default function SellerProfilePage() {
         }
     };
 
-    if (authLoading || isLoading) {
+    if (isAuthLoading || isLoading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -76,7 +76,14 @@ const BuyerHome = () => {
                         );
                     }
                     if (age) {
-                        filteredPets = filteredPets.filter(pet => pet.age === age);
+                        filteredPets = filteredPets.filter(pet => {
+                            const petAge = parseInt(pet.age);
+                            if (age === "0-3 Months") return petAge >= 0 && petAge < 3;
+                            if (age === "3-6 Months") return petAge >= 3 && petAge < 6;
+                            if (age === "6-12 Months") return petAge >= 6 && petAge < 12;
+                            if (age === "1+ Year") return petAge >= 12;
+                            return false;
+                        });
                     }
                     if (minPrice) {
                         filteredPets = filteredPets.filter(pet => pet.price >= Number(minPrice));
@@ -111,7 +118,14 @@ const BuyerHome = () => {
                 }
                 if (age) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    filteredPets = filteredPets.filter((pet: any) => pet.age === age);
+                    filteredPets = filteredPets.filter((pet: any) => {
+                        const petAge = parseInt(pet.age);
+                        if (age === "0-3 Months") return petAge >= 0 && petAge < 3;
+                        if (age === "3-6 Months") return petAge >= 3 && petAge < 6;
+                        if (age === "6-12 Months") return petAge >= 6 && petAge < 12;
+                        if (age === "1+ Year") return petAge >= 12;
+                        return false;
+                    });
                 }
                 if (minPrice) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any

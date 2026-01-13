@@ -95,124 +95,120 @@ export function PetCard({ pet }: PetCardProps) {
 
     const imageUrl = getImageUrl();
     const sellerName = getSellerName();
-    const currencySymbol = currency?.toLowerCase() === 'indian' ? '₹' : (currency || '₹');
-    const formattedPrice = typeof price === 'number' ? `${currencySymbol}${price.toLocaleString()}` : `${currencySymbol}${price}`;
+    const currencySymbol = currency === 'INR' || currency === 'indian' ? '₹' : currency === 'USD' ? '$' : '₹';
+    const formattedPrice = typeof price === 'number' ? `${currencySymbol}${price.toLocaleString('en-IN')}` : `${currencySymbol}${price}`;
 
     const handleViewDetails = () => {
         if (_id) router.push(`/pets/${_id}`);
     };
 
     return (
-        <Card className="group flex flex-col h-full p-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:bg-slate-950 dark:border-slate-800">
+        <div
+            className="group relative cursor-pointer overflow-hidden rounded-2xl bg-white shadow-md transition-all duration-300 hover:scale-105 hover:shadow-2xl dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800"
+        >
+            {/* Verified Badge */}
+            {isVerified && (
+                <div className="absolute top-3 left-3 z-10">
+                    <div className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 px-3 py-1.5 shadow-lg">
+                        <Shield className="h-3.5 w-3.5 fill-white text-white" />
+                        <span className="text-xs font-bold text-white">Verified</span>
+                    </div>
+                </div>
+            )}
 
-            {/* --- 1. Hero Image Section --- */}
+            {/* Wishlist Button */}
+            {pet._id && (
+                <div className="absolute top-3 right-3 z-20 rounded-full bg-white/90 p-1.5 shadow-lg transition-transform active:scale-95 backdrop-blur-sm">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    <WishlistButton petId={pet._id} pet={pet as any} />
+                </div>
+            )}
+
+            {/* Image */}
             <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
                 <Image
                     src={imageUrl}
                     alt={`${name} - ${breedName}`}
                     fill
-                    className="object-cover transition-transform  duration-500 group-hover:scale-105"
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     unoptimized
                 />
-
-                {/* Overlay Gradient for contrast (Bottom up) */}
-                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent opacity-60" />
-
-                {/* Verified Badge */}
-                {isVerified && (
-                    <div className="absolute top-3 left-3 z-10">
-                        <div className="flex items-center gap-1 rounded-full bg-emerald-500/90 px-2.5 py-1 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
-                            <Shield className="h-3 w-3 fill-current" />
-                            <span>Verified</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* Wishlist Button (Glassmorphism container) */}
-                {pet._id && (
-                    <div className="absolute top-3 right-3 z-20 rounded-full bg-white/90 p-1.5 shadow-sm transition-transform active:scale-95">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        <WishlistButton petId={pet._id} pet={pet as any} />
-                    </div>
-                )}
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </div>
 
-            {/* --- 2. Content Body --- */}
-            <div className="flex flex-1 flex-col p-4">
-
-                {/* Header: Name & Breed */}
-                <div className="mb-3">
-                    <div className="flex items-start justify-between">
-                        <h3 className="line-clamp-1 text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50">
-                            {name}
-                        </h3>
-                    </div>
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                        {breedName}
-                    </p>
+            {/* Content */}
+            <div className="p-5">
+                {/* Pet Name & Breed - Horizontal Layout */}
+                <div className="mb-3 flex items-center justify-between gap-2">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
+                        {name}
+                    </h3>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">{breedName}</p>
                 </div>
 
-                {/* Attributes Grid */}
-                <div className="mb-4 flex flex-wrap gap-y-2 gap-x-4 text-xs text-slate-500 dark:text-slate-400">
-                    <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md dark:bg-slate-900">
+                {/* Description */}
+                {description && (
+                    <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                        {description}
+                    </p>
+                )}
+
+                {/* Age & Location - Horizontal Layout */}
+                <div className="mb-3 flex items-center justify-between text-sm text-gray-500 gap-2">
+                    <span className="flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
                         <span>{age}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md dark:bg-slate-900">
-                        <MapPin className="h-3.5 w-3.5" />
-                        <span className="line-clamp-1 max-w-[120px]">{formatLocation()}</span>
-                    </div>
+                    </span>
+                    <span className="flex items-center gap-1 flex-1 justify-end">
+                        <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="line-clamp-1  gap-5 text-right">{formatLocation()}</span>
+                    </span>
                 </div>
 
-                {/* Seller Info (Subtle) */}
+                {/* Seller Info - Horizontal */}
                 {sellerName && (
-                    <div className="mb-4 flex items-center gap-1.5 text-xs text-slate-400">
+                    <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-400">
                         <User className="h-3 w-3" />
                         <span className="truncate">By {sellerName}</span>
                     </div>
                 )}
 
-                {/* Description (Truncated) */}
-                {description && (
-                    <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                        {description}
-                    </p>
-                )}
-
-                {/* --- 3. Footer Action Area --- */}
-                <div className="mt-auto pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <div className="flex flex-col gap-3">
-                        {/* Price Display */}
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-sm text-slate-500">Adoption Fee:</span>
-                            <span className="text-xl font-bold text-slate-900 dark:text-white">
+                {/* Price & Actions */}
+                <div className="border-t border-gray-100 dark:border-slate-800 pt-3">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">Price:</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
                                 {formattedPrice}
-                            </span>
+                            </p>
                         </div>
+                    </div>
 
-                        {/* WhatsApp Button - Primary Action */}
+                    {/* Action Buttons */}
+                    <div className="flex flex-col sm:flex-row gap-2.5 items-stretch">
+                        {/* WhatsApp Button */}
                         {_id && sellerId?._id && (
                             <WhatsAppButton
                                 sellerId={sellerId._id}
                                 petId={_id}
-                                size="default"
-                                fullWidth
-                                className="h-11 text-sm font-semibold rounded-xl"
+                                size="sm"
+                                fullWidth={false}
+                                className="flex-1 h-11 px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-semibold rounded-lg whitespace-nowrap"
                             />
                         )}
 
-                        {/* View Details - Secondary Action */}
-                        <Button
+                        {/* View Details Button */}
+                        <button
                             onClick={handleViewDetails}
-                            variant="outline"
-                            className="w-full rounded-xl shadow-sm hover:shadow-md active:scale-[0.98] transition-all h-11 text-sm font-semibold"
+                            className="flex-1 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-semibold text-gray-900 dark:text-white shadow-sm transition-all hover:bg-slate-200 dark:hover:bg-slate-700 hover:shadow-md active:scale-95 flex items-center justify-center whitespace-nowrap"
                         >
                             View Details
-                        </Button>
+                        </button>
                     </div>
                 </div>
             </div>
-        </Card>
+        </div>
     );
 }

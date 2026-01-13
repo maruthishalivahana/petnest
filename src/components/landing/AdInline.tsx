@@ -56,13 +56,13 @@ export default function AdInline({ className = "" }: AdInlineProps) {
 
     if (loading) {
         return (
-            <div className={cn("w-full overflow-hidden rounded-3xl shadow-xl", className)}>
-                <div className="relative h-[240px] sm:h-[300px] md:h-[380px] lg:h-[420px] bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
-                    <div className="h-full px-8 sm:px-10 lg:px-14 py-8 sm:py-10">
-                        <Skeleton className="h-7 w-28 rounded-full mb-4" />
-                        <Skeleton className="h-10 sm:h-12 w-3/4 rounded-lg mb-3" />
-                        <Skeleton className="h-5 w-2/3 rounded-lg mb-6" />
-                        <Skeleton className="h-12 w-36 rounded-full" />
+            <div className={cn("w-full overflow-hidden rounded-2xl shadow-md", className)}>
+                <div className="relative h-[380px] bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-900">
+                    <div className="h-full px-6 py-6">
+                        <Skeleton className="h-6 w-24 rounded-full mb-3" />
+                        <Skeleton className="h-8 w-3/4 rounded-lg mb-2" />
+                        <Skeleton className="h-4 w-2/3 rounded-lg mb-4" />
+                        <Skeleton className="h-10 w-32 rounded-lg" />
                     </div>
                 </div>
             </div>
@@ -85,13 +85,13 @@ export default function AdInline({ className = "" }: AdInlineProps) {
         <div
             onClick={handleClick}
             className={cn(
-                "group relative w-full overflow-hidden rounded-3xl cursor-pointer shadow-xl transition-all duration-300 hover:shadow-2xl",
+                "group relative w-full overflow-hidden rounded-2xl cursor-pointer shadow-md transition-all duration-300 hover:scale-105 hover:shadow-2xl",
                 className
             )}
         >
             <div
                 className={cn(
-                    "relative w-full h-[240px] sm:h-[300px] md:h-[380px] lg:h-[420px] bg-gradient-to-br",
+                    "relative w-full h-[380px] bg-gradient-to-br",
                     gradient
                 )}
             >
