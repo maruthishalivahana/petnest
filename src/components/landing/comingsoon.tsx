@@ -159,16 +159,16 @@ export default function App() {
 
             {/* --- Navigation --- */}
             <nav className="sticky top-0 z-[100] bg-[#fcfcfb]/80 backdrop-blur-md border-b border-gray-100">
-                <div className="max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-12 py-4 sm:py-6 flex justify-between items-center">
-                    <div className="flex items-center gap-2 sm:gap-3 cursor-pointer group">
-                        <div className="bg-[#606c38] p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl text-white shadow-lg group-hover:rotate-12 transition-transform duration-300">
-                            <PawPrint size={20} className="sm:w-6 sm:h-6" strokeWidth={2.5} />
+                <div className="max-w-[1800px] mx-auto px-3 sm:px-6 lg:px-6 xl:px-12 py-3 sm:py-4 lg:py-4 xl:py-6 flex justify-between items-center">
+                    <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-3 cursor-pointer group flex-shrink-0">
+                        <div className="bg-[#606c38] p-1.5 sm:p-2 xl:p-2.5 rounded-lg sm:rounded-xl xl:rounded-2xl text-white shadow-lg group-hover:rotate-12 transition-transform duration-300">
+                            <PawPrint size={16} className="sm:w-5 sm:h-5 xl:w-6 xl:h-6" strokeWidth={2.5} />
                         </div>
-                        <span className="text-[16px] sm:text-[22px] font-black tracking-tighter uppercase text-[#606c38]">PetNest</span>
+                        <span className="text-[14px] sm:text-[18px] lg:text-[19px] xl:text-[22px] font-black tracking-tighter uppercase text-[#606c38]">PetNest</span>
                     </div>
                     
                     {/* Desktop Nav */}
-                    <div className="hidden lg:flex items-center gap-6 xl:gap-8">
+                    <div className="hidden lg:flex items-center gap-3 xl:gap-8">
                         {navItems.map((item) => (
                             <div key={item} className="relative group/nav">
                               <span 
@@ -177,7 +177,7 @@ export default function App() {
                                           document.getElementById('market')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                       }
                                   }}
-                                  className="text-[16px] font-bold text-gray-500 group-hover/nav:text-[#606c38] cursor-pointer transition-colors py-2 block"
+                                  className="text-[13px] xl:text-[16px] font-bold text-gray-500 group-hover/nav:text-[#606c38] cursor-pointer transition-colors py-2 block whitespace-nowrap"
                               >
                                   {item}
                               </span>
@@ -186,23 +186,26 @@ export default function App() {
                         ))}
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        <div className="hidden sm:flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2 xl:gap-4 flex-shrink-0">
+                        <div className="hidden md:flex items-center gap-1.5 xl:gap-2">
                             <Link href="/login">
-                            <Button variant="ghost" size="md" >Login</Button>
+                            <Button variant="ghost" size="sm" className="px-3 py-2 xl:px-6 xl:py-3 text-[13px] xl:text-[16px]">Login</Button>
                             </Link>
-                            
+                            <Link href="/signup">
+                            <Button className="rounded-xl px-3 py-2 xl:px-6 xl:py-3 text-[13px] xl:text-[16px]" size="sm">Sign UP</Button>
+                            </Link>
                         </div>
-                        <Link href="/signup">
-                        <Button className="hidden md:flex rounded-xl"  size="md">Sign UP</Button>
+                        <Link href="/request-ad" className="hidden sm:block">
+                        <Button variant="outline" size="sm" className="rounded-lg xl:rounded-xl px-2.5 py-2 sm:px-3 sm:py-2 xl:px-6 xl:py-3 text-[11px] sm:text-[12px] xl:text-[16px] whitespace-nowrap" icon={Megaphone}>
+                          Advertise
+                        </Button>
                         </Link>
-                        <Button variant="outline" size="md" className="rounded-xl" icon={Megaphone}>Advertise</Button>
                         
                         <button 
-                            className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-xl"
+                            className="lg:hidden p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 rounded-lg sm:rounded-xl flex-shrink-0"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                         >
-                            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                            {mobileMenuOpen ? <X size={20} className="sm:w-6 sm:h-6" /> : <Menu size={20} className="sm:w-6 sm:h-6" />}
                         </button>
                     </div>
                 </div>
@@ -213,7 +216,7 @@ export default function App() {
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl p-6 flex flex-col gap-6 lg:hidden"
+                            className="absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl p-4 sm:p-6 flex flex-col gap-4 sm:gap-6 lg:hidden"
                         >
                             {navItems.map((item) => (
                                 <span 
@@ -224,14 +227,21 @@ export default function App() {
                                             document.getElementById('market')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                         }
                                     }}
-                                    className="text-[18px] font-bold text-gray-800 border-b border-gray-50 pb-2 cursor-pointer hover:text-[#606c38] transition-colors"
+                                    className="text-[16px] sm:text-[18px] font-bold text-gray-800 border-b border-gray-50 pb-2 cursor-pointer hover:text-[#606c38] transition-colors"
                                 >
                                     {item}
                                 </span>
                             ))}
-                            <div className="grid grid-cols-2 gap-4 pt-4">
-                                <Button variant="outline">Login</Button>
-                                <Button variant="outline" size="sm" className="rounded-xl" icon={Megaphone}>Advertise</Button>
+                            <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3 sm:gap-4 pt-2 sm:pt-4">
+                                <Link href="/login" className="w-full">
+                                <Button variant="outline" size="md" className="w-full">Login</Button>
+                                </Link>
+                                <Link href="/signup" className="w-full">
+                                <Button size="md" className="w-full rounded-xl">Sign UP</Button>
+                                </Link>
+                                <Link href="/request-ad" className="w-full sm:col-span-2">
+                                <Button variant="outline" size="md" className="w-full rounded-xl" icon={Megaphone}>Advertise</Button>
+                                </Link>
                             </div>
                         </motion.div>
                     )}
