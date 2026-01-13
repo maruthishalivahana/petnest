@@ -28,6 +28,12 @@ apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         // Cookie is automatically sent by browser when withCredentials: true
         // No need to manually add Authorization header
+
+        // Fix for FormData: Remove Content-Type header to let browser/axios set it with boundary
+        if (config.data instanceof FormData) {
+            delete config.headers['Content-Type'];
+        }
+
         return config;
     },
     (error: AxiosError) => {

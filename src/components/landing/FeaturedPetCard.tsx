@@ -4,6 +4,7 @@ import { MapPin, Star } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
+import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 
 interface FeaturedPet {
     _id: string;
@@ -17,6 +18,14 @@ interface FeaturedPet {
         city?: string;
         state?: string;
         pincode?: string;
+    };
+    description?: string;
+    sellerId?: string | {
+        _id: string;
+        brandName?: string;
+        userId?: {
+            name?: string;
+        };
     };
 }
 
@@ -38,6 +47,8 @@ export function FeaturedPetCard({ pet }: FeaturedPetCardProps) {
         price,
         location,
         images,
+        description,
+        sellerId,
     } = pet;
 
     // Format location with JSON string handling
@@ -116,36 +127,64 @@ export function FeaturedPetCard({ pet }: FeaturedPetCardProps) {
 
             {/* Content */}
             <div className="p-5">
-                {/* Pet Name & Breed */}
-                <div className="mb-3">
+                {/* Pet Name & Breed - Horizontal Layout */}
+                <div className="mb-3 flex items-center justify-between gap-2">
                     <h3 className="text-xl font-bold text-gray-900 line-clamp-1 group-hover:text-amber-600 transition-colors">
                         {name}
                     </h3>
-                    <p className="text-sm font-medium text-gray-600 line-clamp-1">{displayBreed}</p>
+                    <p className="text-sm font-medium text-gray-600 whitespace-nowrap">{displayBreed}</p>
                 </div>
 
-                {/* Age & Location */}
-                <div className="mb-4 flex items-center gap-4 text-sm text-gray-500">
+                {/* Description */}
+                {description && (
+                    <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-gray-600">
+                        {description}
+                    </p>
+                )}
+
+                {/* Age & Location - Compact Horizontal */}
+                <div className="mb-4 flex items-center justify-between text-sm text-gray-500 gap-2">
                     <span className="flex items-center gap-1">
-                        <span className="font-medium">Age:</span> {age}
+                        <span className="font-medium text-gray-700">Age:</span> <span>{age}</span>
                     </span>
-                    <span className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" />
-                        <span className="line-clamp-1">{formattedLocation}</span>
+                    <span className="flex items-center gap-1 flex-1 justify-end">
+                        <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="line-clamp-1 text-right">{formattedLocation}</span>
                     </span>
                 </div>
 
-                {/* Price */}
-                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                    <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Price</p>
-                        <p className="text-2xl font-bold text-amber-600">
-                            ₹{price.toLocaleString()}
-                        </p>
+                {/* Price - Horizontal with inline display */}
+                <div className="border-t border-gray-100 pt-3">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-xs text-gray-500 uppercase tracking-wide">Price:</p>
+                            <p className="text-2xl font-bold text-amber-600">
+                                ₹{price.toLocaleString()}
+                            </p>
+                        </div>
                     </div>
-                    <button className="rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-amber-600 hover:shadow-lg active:scale-95">
-                        View Details
-                    </button>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 items-stretch">
+                        {/* WhatsApp Button */}
+                        {_id && sellerId && (
+                            <WhatsAppButton
+                                sellerId={typeof sellerId === 'string' ? sellerId : sellerId._id}
+                                petId={_id}
+                                size="sm"
+                                fullWidth={false}
+                                className="flex-1 h-10 text-sm font-semibold rounded-lg"
+                            />
+                        )}
+
+                        {/* View Details Button */}
+                        <button
+                            onClick={handleClick}
+                            className="flex-1 h-10 rounded-lg bg-amber-500 px-4 text-sm font-semibold text-white shadow-md transition-all hover:bg-amber-600 hover:shadow-lg active:scale-95 flex items-center justify-center"
+                        >
+                            View Details
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

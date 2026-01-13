@@ -113,19 +113,13 @@ export default function AddPetPage() {
     };
 
     const onSubmit = async (data: PetListingFormData) => {
-        // Check if seller is verified
         if (sellerVerified === false) {
-            toast.error('Your seller account is not verified yet. Please wait for admin approval before adding pets.', {
-                duration: 5000,
-                description: 'You can check your verification status in the Verification section.'
-            });
+            toast.error('Your seller account is not verified yet.');
             return;
         }
 
         if (sellerVerified === null) {
-            toast.error('Unable to verify seller status. Please try again.', {
-                duration: 5000
-            });
+            toast.error('Unable to verify seller status.');
             return;
         }
 
@@ -133,6 +127,7 @@ export default function AddPetPage() {
             setIsSubmitting(true);
 
             const formData = new FormData();
+
             formData.append('name', data.name);
             formData.append('breedName', data.breedName);
             formData.append('gender', data.gender);
@@ -143,20 +138,26 @@ export default function AddPetPage() {
             formData.append('location[state]', data.location.state);
             formData.append('location[pincode]', data.location.pincode);
             formData.append('description', data.description);
+
             if (data.vaccinationInfo) {
                 formData.append('vaccinationInfo', data.vaccinationInfo);
             }
 
-            Array.from(data.images).forEach((file: File) => {
+            // ✅ USE STATE IMAGES (not react-hook-form images)
+            if (selectedImages.length === 0) {
+                toast.error("Please upload at least one image");
+                setIsSubmitting(false);
+                return;
+            }
+
+            selectedImages.forEach((file) => {
                 formData.append('images', file);
             });
 
-            // Submit to backend
             const response = await addPetListing(formData);
 
             if (response.success) {
                 toast.success(response.message);
-                // Redirect to listings page
                 setTimeout(() => {
                     router.push('/seller/listings');
                 }, 1000);
@@ -171,6 +172,7 @@ export default function AddPetPage() {
             setIsSubmitting(false);
         }
     };
+
 
     // Show loading while checking status
     if (checkingStatus) {
