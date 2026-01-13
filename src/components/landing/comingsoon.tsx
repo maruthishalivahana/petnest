@@ -26,7 +26,15 @@ import Link from "next/link";
  * Professional UI Components
  */
 
-const Button = ({ children, className = "", variant = "primary", size = "md", icon: Icon, ...props }) => {
+type ButtonProps = {
+    children?: React.ReactNode;
+    variant?: "primary" | "secondary" | "ghost" | "outline";
+    size?: "sm" | "md" | "lg";
+    icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+    className?: string;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>;
+
+const Button = ({ children, variant = "primary", size = "md", icon: Icon, className = "", ...props }: ButtonProps) => {
   const baseStyles = "inline-flex items-center justify-center font-bold rounded-2xl transition-all duration-300 active:scale-95 disabled:opacity-50 focus:outline-none whitespace-nowrap";
   
   const variants = {
@@ -53,7 +61,7 @@ const Button = ({ children, className = "", variant = "primary", size = "md", ic
 
 const CurrentYear = new Date().getFullYear();
 
-const FAQItem = ({ question, answer }) => {
+const FAQItem = ({ question, answer }: { question: string; answer: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className="border-b border-gray-100 last:border-0">
@@ -87,36 +95,43 @@ const FAQItem = ({ question, answer }) => {
   );
 };
 
-const Input = ({ className = "", ...props }) => (
+const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input 
     className={`flex h-12 sm:h-16 w-full rounded-2xl border-2 border-gray-100 bg-gray-50/50 px-4 sm:px-6 py-2 text-[14px] sm:text-[16px] transition-all placeholder:text-gray-400 focus:bg-white focus:border-[#606c38]/40 focus:outline-none shadow-inner ${className}`} 
     {...props} 
   />
 );
 
+type WaitlistEntry = {
+  email: string;
+  timestamp: string;
+};
+
 export default function App() {
     const [email, setEmail] = useState("");
     const [mounted, setMounted] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [count, setCount] = useState(null);
+    const [count, setCount] = useState<number | null>(null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         setMounted(true);
-        const list = JSON.parse(localStorage.getItem("waitlist") || "[]");
+        const storedWaitlist = localStorage.getItem("waitlist");
+        const list: WaitlistEntry[] = storedWaitlist ? JSON.parse(storedWaitlist) : [];
         setCount(list.length);
     }, []);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!email || !email.includes('@')) return;
         setIsLoading(true);
         
         await new Promise(resolve => setTimeout(resolve, 1500)); 
         
-        const list = JSON.parse(localStorage.getItem("waitlist") || "[]");
-        if (!list.some(item => item.email === email)) {
+        const storedWaitlist = localStorage.getItem("waitlist");
+        const list: WaitlistEntry[] = storedWaitlist ? JSON.parse(storedWaitlist) : [];
+        if (!list.some((item) => item.email === email)) {
             list.push({ email, timestamp: new Date().toISOString() });
             localStorage.setItem("waitlist", JSON.stringify(list));
         }
@@ -149,7 +164,7 @@ export default function App() {
                         <div className="bg-[#606c38] p-1.5 sm:p-2.5 rounded-xl sm:rounded-2xl text-white shadow-lg group-hover:rotate-12 transition-transform duration-300">
                             <PawPrint size={20} className="sm:w-6 sm:h-6" strokeWidth={2.5} />
                         </div>
-                        <span className="text-[18px] sm:text-[22px] font-black tracking-tighter uppercase text-[#606c38]">PetNest</span>
+                        <span className="text-[16px] sm:text-[22px] font-black tracking-tighter uppercase text-[#606c38]">PetNest</span>
                     </div>
                     
                     {/* Desktop Nav */}
@@ -162,7 +177,7 @@ export default function App() {
                                           document.getElementById('market')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                       }
                                   }}
-                                  className="text-[14px] font-bold text-gray-500 group-hover/nav:text-[#606c38] cursor-pointer transition-colors py-2 block"
+                                  className="text-[16px] font-bold text-gray-500 group-hover/nav:text-[#606c38] cursor-pointer transition-colors py-2 block"
                               >
                                   {item}
                               </span>
@@ -174,14 +189,14 @@ export default function App() {
                     <div className="flex items-center gap-2 sm:gap-4">
                         <div className="hidden sm:flex items-center gap-2">
                             <Link href="/login">
-                            <Button variant="ghost" size="sm">Login</Button>
+                            <Button variant="ghost" size="md" >Login</Button>
                             </Link>
                             
                         </div>
                         <Link href="/signup">
-                        <Button className="hidden md:flex rounded-xl" icon="" size="sm">Sign UP</Button>
+                        <Button className="hidden md:flex rounded-xl"  size="md">Sign UP</Button>
                         </Link>
-                        <Button variant="outline" size="sm" className="rounded-xl" icon={Megaphone}>Advertise</Button>
+                        <Button variant="outline" size="md" className="rounded-xl" icon={Megaphone}>Advertise</Button>
                         
                         <button 
                             className="lg:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-xl"
@@ -209,7 +224,7 @@ export default function App() {
                                             document.getElementById('market')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                         }
                                     }}
-                                    className="text-[16px] font-bold text-gray-800 border-b border-gray-50 pb-2 cursor-pointer hover:text-[#606c38] transition-colors"
+                                    className="text-[18px] font-bold text-gray-800 border-b border-gray-50 pb-2 cursor-pointer hover:text-[#606c38] transition-colors"
                                 >
                                     {item}
                                 </span>
@@ -276,7 +291,7 @@ export default function App() {
                                             className="bg-transparent border-none shadow-none h-12 sm:h-14 w-full"
                                             placeholder="Your email address"
                                             value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                                             required
                                             disabled={isLoading}
                                         />
@@ -380,9 +395,9 @@ export default function App() {
                 {/* --- Categories Grid --- */}
                 <section id="market" className="bg-white py-20 sm:py-32">
                     <div className="max-w-[1800px] mx-auto px-4 sm:px-8 lg:px-12">
-                        <h2 className="text-[20px] md:text-[24px] lg:text-[26px] font-black tracking-tighter mb-12 sm:mb-20 text-center leading-tight">
+                        <h1 className="text-[18px] md:text-[26px] lg:text-[36px] font-black tracking-tighter mb-12 sm:mb-20 text-center leading-tight">
                             A marketplace for <br className="sm:hidden" /> <span className="text-[#606c38]">everyone's family.</span>
-                        </h2>
+                        </h1>
                         
                         <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6 sm:gap-8">
                             {[
@@ -463,8 +478,8 @@ export default function App() {
                                 <Sparkles size={14} className="text-[#dda15e]" />
                                 Our Pledge
                             </div>
-                            <h2 className="text-[26px] md:text-[38px] lg:text-[48px] xl:text-[56px] font-black tracking-tighter leading-tight text-gray-900">Ethical breeding <br className="hidden sm:block" /> is our obsession.</h2>
-                            <p className="text-[15px] md:text-[17px] text-gray-500 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
+                            <h1 className="text-[18px] md:text-[26px] lg:text-[36px] font-black tracking-tighter leading-tight text-gray-900">Ethical breeding <br className="hidden sm:block" /> is our obsession.</h1>
+                            <p className="text-[14px] md:text-[16px] text-gray-500 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
                                 Built by pet parents, for pet parents. We verify government documents, conduct spot checks, and strictly monitor community feedback to ensure every listing meets our gold standard.
                             </p>
                             
@@ -485,7 +500,7 @@ export default function App() {
                                             <CheckCircle2 size={20} className="sm:w-6 sm:h-6" />
                                         </div>
                                         <div>
-                                            <h5 className="font-bold text-[17px] sm:text-[19px] mb-1 text-gray-900 group-hover:text-[#606c38] transition-colors">{pledge.title}</h5>
+                                            <h5 className="font-bold text-[16px] sm:text-[18px] mb-1 text-gray-900 group-hover:text-[#606c38] transition-colors">{pledge.title}</h5>
                                             <p className="text-[14px] sm:text-[15px] text-gray-500 font-medium leading-relaxed">{pledge.desc}</p>
                                         </div>
                                     </motion.li>
@@ -504,8 +519,8 @@ export default function App() {
                 <section className="py-20 sm:py-32 bg-white">
                   <div className="max-w-4xl mx-auto px-6 sm:px-8">
                     <div className="text-center mb-12 sm:mb-20">
-                      <h2 className="text-[20px] md:text-[24px] lg:text-[26px] font-black tracking-tighter mb-4 text-[#606c38] leading-tight">Common Questions</h2>
-                      <p className="text-gray-500 font-bold uppercase text-[12px] tracking-widest">Everything you need to know about PetNest</p>
+                      <h1 className="text-[18px] md:text-[26px] lg:text-[36px] font-black tracking-tighter mb-4 text-[#606c38] leading-tight">Common Questions</h1>
+                      <p className="text-gray-500 font-bold uppercase text-[16px] tracking-widest">Everything you need to know about PetNest</p>
                     </div>
                     
                     <div className="divide-y divide-gray-50">
