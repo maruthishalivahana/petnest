@@ -23,7 +23,7 @@ import { logout } from '@/store/slices/authSlice';
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 interface NavItem {
     href: string;
