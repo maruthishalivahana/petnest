@@ -187,7 +187,7 @@ export function PetCard({ pet }: PetCardProps) {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2 items-stretch">
+                    <div className="flex flex-col sm:flex-row gap-2.5 items-stretch">
                         {/* WhatsApp Button */}
                         {_id && sellerId?._id && (
                             <WhatsAppButton
@@ -195,14 +195,14 @@ export function PetCard({ pet }: PetCardProps) {
                                 petId={_id}
                                 size="sm"
                                 fullWidth={false}
-                                className="flex-1 h-10 text-sm font-semibold rounded-lg"
+                                className="flex-1 h-11 px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-semibold rounded-lg whitespace-nowrap"
                             />
                         )}
 
                         {/* View Details Button */}
                         <button
                             onClick={handleViewDetails}
-                            className="flex-1 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 text-sm font-semibold text-gray-900 dark:text-white shadow-sm transition-all hover:bg-slate-200 dark:hover:bg-slate-700 hover:shadow-md active:scale-95 flex items-center justify-center"
+                            className="flex-1 h-11 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-semibold text-gray-900 dark:text-white shadow-sm transition-all hover:bg-slate-200 dark:hover:bg-slate-700 hover:shadow-md active:scale-95 flex items-center justify-center whitespace-nowrap"
                         >
                             View Details
                         </button>
